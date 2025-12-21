@@ -1,0 +1,497 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Harmonist Academy - V7.0 (Connected Identity)</title>
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+<script type="importmap">
+{
+  "imports": {
+    "path": "https://esm.sh/path@^0.12.7",
+    "vite": "https://esm.sh/vite@^7.2.7"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="challengeProgressContainer" class="challenge-progress-container"></div>
+
+<div class="vignette-overlay" id="vignette"></div>
+
+<div class="badge-ribbon" id="badgeRibbon">
+    <span class="badge-ribbon-icon">🏅</span>
+    <div>
+        <span class="badge-txt-gold" id="badgeRibbonTitle">Badge</span>
+        <span>Débloqué !</span>
+    </div>
+</div>
+
+<canvas class="confetti-canvas" id="confetti"></canvas>
+
+<div class="level-hud" id="levelOverlay">
+    <div style="font-size:4rem;">🎉</div>
+    <p>Niveau Supérieur !</p>
+    <h1 id="lvlOverlayName">...</h1>
+</div>
+
+<div class="combo-popup" id="comboPopup">
+    <h2 id="comboTitle">COMBO x10</h2>
+    <p>Incroyable !</p>
+</div>
+
+<div class="toast-box" id="rankToast"></div>
+
+<div class="app-container" id="appContainer">
+    <header>
+        <div class="header-left" onclick="window.UI.openModal('modalProfile')">
+            <div class="rank-icon" id="rankIcon">📄</div>
+            <div class="rank-text">
+                <div style="display:flex; align-items:center;">
+                    <div class="lvl-pill">Niveau <span id="lvlNum">1</span></div>
+                    <div class="mastery-stars" id="headerStars"></div>
+                </div>
+                <div class="rank-title" id="rankTitle">...</div>
+                <div class="xp-container"><div class="xp-fill" id="xpBar"></div></div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="stats-cluster">
+                <div class="stat-badge">
+                    <span class="stat-lbl">Précision</span>
+                    <span class="stat-val" id="precisionVal">0%</span>
+                </div>
+                <div class="stat-badge trophy score-group" id="scoreGroup">
+                    <span class="score-main" id="currentScoreVal">0</span>
+                    <span class="score-sub">TOP: <span id="highScoreVal">0</span></span>
+                </div>
+                <div class="stat-badge">
+                    <span class="stat-lbl">Série</span>
+                    <span class="stat-val" id="streakVal" style="color:var(--accent)">0</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="btnCodex" onclick="window.UI.openCodex()">📖</button>
+                <button class="icon-btn" id="btnArena" onclick="window.UI.showChallengeHub()" style="color:var(--gold); border:1px solid rgba(251, 191, 36, 0.3);">⚔️</button>
+                <button class="icon-btn" id="btnStats" onclick="window.UI.openModal('statsModal')">📊</button>
+                <button class="icon-btn" id="btnSettings" onclick="window.UI.openModal('settingsModal')">⚙️</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="tools-bar" id="toolsBar">
+        <div class="mode-selector">
+            <div class="mode-opt active" id="modeZen" onclick="window.App.setMode('zen')">🧘 Zen</div>
+            <div class="mode-opt" id="modeChrono" onclick="window.App.setMode('chrono')">⚡ Chrono</div>
+            <div class="mode-opt" id="modeSprint" onclick="window.App.setMode('sprint')">🏃 Sprint</div>
+            <div class="mode-opt" id="modeInverse" onclick="window.App.setMode('inverse')">🎧 Inverse</div>
+        </div>
+        <div class="vis-container">
+            <canvas id="visualizer"></canvas>
+            <canvas id="pianoCanvas"></canvas>
+            <div class="feedback-msg" id="statusText">Prêt ?</div>
+            <div class="sprint-bar-container"><div class="sprint-bar-fill" id="sprintFill"></div></div>
+        </div>
+        <div class="timer-badge" id="chronoDisplay">
+            <span id="timerVal">60</span><span class="lives" id="livesVal">❤️❤️❤️</span>
+        </div>
+    </div>
+
+    <!-- STUDIO PANEL (Phase 2) -->
+    <div id="studioPanel" class="studio-panel" style="display:none;">
+        <div class="studio-controls">
+            <div class="bass-octave-ctrl">
+                <button class="oct-btn" onclick="window.App.adjStudioOct(-12)">-</button>
+                <span class="oct-lbl">OCT</span>
+                <button class="oct-btn" onclick="window.App.adjStudioOct(12)">+</button>
+            </div>
+            <div class="piano-strip">
+                <!-- Do à Si (12 touches) -->
+                <button class="piano-key white" id="pk-0" onclick="window.App.setStudioBass(0)">C</button>
+                <button class="piano-key black" id="pk-1" onclick="window.App.setStudioBass(1)"></button>
+                <button class="piano-key white" id="pk-2" onclick="window.App.setStudioBass(2)">D</button>
+                <button class="piano-key black" id="pk-3" onclick="window.App.setStudioBass(3)"></button>
+                <button class="piano-key white" id="pk-4" onclick="window.App.setStudioBass(4)">E</button>
+                <button class="piano-key white" id="pk-5" onclick="window.App.setStudioBass(5)">F</button>
+                <button class="piano-key black" id="pk-6" onclick="window.App.setStudioBass(6)"></button>
+                <button class="piano-key white" id="pk-7" onclick="window.App.setStudioBass(7)">G</button>
+                <button class="piano-key black" id="pk-8" onclick="window.App.setStudioBass(8)"></button>
+                <button class="piano-key white" id="pk-9" onclick="window.App.setStudioBass(9)">A</button>
+                <button class="piano-key black" id="pk-10" onclick="window.App.setStudioBass(10)"></button>
+                <button class="piano-key white" id="pk-11" onclick="window.App.setStudioBass(11)">B</button>
+            </div>
+            <!-- Bouton Save retiré pour laisser la place au piano -->
+        </div>
+        <div class="studio-timeline" id="studioTimeline">
+            <div class="timeline-placeholder">Timeline vide...</div>
+        </div>
+    </div>
+
+    <div class="game-area" id="mainArea">
+        <div class="panel" id="panelChord">
+            <div class="panel-label"><span>Qualité</span><span>(1-6)</span></div>
+            <div class="pad-grid grid-c" id="chordGrid"></div>
+        </div>
+        
+        <div class="panel" id="invPanel">
+            <div class="panel-label"><span id="invPanelLabel">Renversement</span><span>(A Z E R)</span></div>
+            <div class="pad-grid grid-i" id="invGrid"></div>
+        </div>
+        
+        <div id="quizArea">
+            <div class="quiz-card">
+                <div class="quiz-hint-txt">Trouve le son :</div>
+                <div class="quiz-target" id="quizTargetLbl">...</div>
+            </div>
+            <div class="quiz-options">
+                <button class="quiz-btn" id="qbtn-0" onclick="window.App.selectQuiz(0)">A<span class="reveal">...</span></button>
+                <button class="quiz-btn" id="qbtn-1" onclick="window.App.selectQuiz(1)">B<span class="reveal">...</span></button>
+                <button class="quiz-btn" id="qbtn-2" onclick="window.App.selectQuiz(2)">C<span class="reveal">...</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="command-deck">
+        <button class="cmd-btn btn-listen" id="playBtn" onclick="window.App.playNew()">
+            <span class="icon-lg">▶</span><span>Écouter</span>
+        </button>
+        <button class="cmd-btn btn-listen" id="replayBtn" onclick="window.App.replay()" disabled>
+            <span class="icon-lg">↺</span><span>Rejouer</span>
+        </button>
+        <button class="cmd-btn btn-action" id="valBtn" onclick="window.App.handleMain()" disabled>Valider</button>
+        <button class="cmd-btn btn-listen" id="hintBtn" onclick="window.App.hint()" disabled style="flex:0.5; font-size:1.2rem;">🔍</button>
+    </div>
+    <div class="app-footer" onclick="window.App.clickTitle()">Harmonist Academy © 2025 Louis Absil</div>
+</div>
+
+<!-- MODALS -->
+
+<!-- SETTINGS -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+        <div style="display:flex; justify-content:flex-end;">
+            <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+        </div>
+        <div class="brand-title" onclick="window.App.clickTitle()">
+            <span class="brand-primary">Harmonist</span> <span class="brand-accent">Academy</span>
+        </div>
+        
+        <h4 style="text-align:left; color:var(--gold); margin:5px 0 10px 0;">👤 Profil</h4>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+             <input type="text" id="usernameInput" placeholder="Votre Pseudo" maxlength="15" 
+                    style="flex:1; background:rgba(0,0,0,0.3); border:1px solid var(--panel-border); color:white; padding:10px; border-radius:8px; font-weight:700;"
+                    onchange="window.App.setUsername(this.value)">
+        </div>
+
+        <h4 style="text-align:left; color:var(--primary); margin:15px 0 5px 0;">Set</h4>
+        <div class="settings-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="setting-chip active" id="set-academy" onclick="window.App.loadSet('academy')">🏛️ Académie</div>
+            <div class="setting-chip" id="set-jazz" onclick="window.App.loadSet('jazz')">🎷 Le Club</div>
+        </div>
+        
+        <div class="toggle-row" id="rowToggleOpen">
+            <span>Position Ouverte <span style="font-size:0.6rem; color:var(--gold); border:1px solid var(--gold); border-radius:4px; padding:1px 3px; margin-left:5px;">+50% XP</span></span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="toggleOpen"><span class="slider"></span>
+            </label>
+        </div>
+
+        <h4 style="text-align:left; color:var(--primary); margin:15px 0 5px 0;">Accords</h4>
+        <div id="settingsChords" class="settings-grid"></div>
+        <h4 style="text-align:left; color:var(--primary); margin:15px 0 5px 0;">Variations</h4>
+        <div id="settingsInvs" class="settings-grid"></div>
+        <button class="cmd-btn btn-listen" onclick="window.UI.openTutorial()" style="width:100%; margin-top:20px; padding:12px; border:1px solid var(--gold); color:var(--gold);">
+            🎓 Guide de l'Académie
+        </button>
+        <button class="cmd-btn" id="btnResetSave" onclick="window.App.hardReset()" style="width:100%; margin-top:20px; background:rgba(239, 68, 68, 0.2); color:var(--error); padding:10px;">⚠️ Réinitialiser</button>
+    </div>
+</div>
+
+<!-- PROFILE -->
+<div class="modal-overlay" id="modalProfile">
+    <div class="modal">
+        <div style="position:absolute; top:15px; right:15px; z-index:50;">
+            <span style="cursor:pointer; font-size:1.5rem; background:rgba(0,0,0,0.5); width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1px solid rgba(255,255,255,0.1);" onclick="window.UI.closeModals()">✕</span>
+        </div>
+
+        <div class="profile-header-compact">
+            <div class="profile-top-row">
+                <div class="profile-avatar-small" id="profileAvatar">🎓</div>
+                <div class="profile-info-compact">
+                    <div style="font-weight:900; font-size:1.1rem; line-height:1.1;" id="profileName">...</div>
+                    <div class="mastery-meta-row">
+                        <div class="mastery-icon-badge" id="masteryIcon">💎</div>
+                        <div id="profileStars" style="display:flex; gap:1px; font-size:0.9rem;"></div>
+                        <span id="masteryLabel">Maîtrise 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-xp-track">
+                <div class="profile-xp-fill" id="profileXpBar"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:var(--text-dim); margin-top:-4px; margin-bottom:10px;">
+                <span id="xpCurrent">0 XP</span>
+                <span id="xpNext">100 XP</span>
+            </div>
+
+            <div class="profile-stats-grid">
+                <div class="mini-stat-box">
+                    <div class="mini-stat-icon">📊</div>
+                    <div class="mini-stat-info">
+                        <span class="mini-stat-val" id="profileAcc">0%</span>
+                        <span class="mini-stat-label">Précision</span>
+                    </div>
+                </div>
+                <div class="mini-stat-box">
+                    <div class="mini-stat-icon">🎹</div>
+                    <div class="mini-stat-info">
+                        <span class="mini-stat-val" id="profileTotal">0</span>
+                        <span class="mini-stat-label">Joués</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="timeline-connector-top"></div>
+        </div>
+
+        <div id="levelTimeline" class="timeline-scroll-area">
+            </div>
+
+        <div class="profile-footer-fixed" id="prestigeSection">
+            <button class="btn-prestige" id="btnPrestige" onclick="window.App.passMastery()" disabled>
+                <span class="shiny"></span>
+                <span class="prestige-main-txt">✨ Valider la Maîtrise</span>
+                <span class="prestige-sub-txt" id="prestigeNextName">Niveau 20 Requis</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- STATS -->
+<div class="modal-overlay" id="statsModal">
+    <div class="modal" style="text-align:left;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0;">Statistiques</h2>
+            <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+        </div>
+        <div class="coach-box" id="coachDisplay"></div>
+        <h4 style="margin:0 0 10px 0; font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Historique de Précision</h4>
+        <div class="history-box" id="historyChart"><div class="chart-limit-line"></div></div>
+        <h4 style="margin:15px 0 10px 0; font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Détails</h4>
+        <div id="statsContent"></div>
+        <div class="badges-section">
+            <h4 style="margin:0 0 10px 0; font-size:0.8rem; color:var(--text-dim); text-transform:uppercase; display:flex; justify-content:space-between;"><span>Trophées</span> <span id="badgeCount">0/25</span></h4>
+            <div class="badges-grid" id="badgesGrid"></div>
+            <div id="badgeDetail" style="font-size:0.7rem; color:var(--gold); text-align:center; min-height:20px; margin-top:5px; font-weight:700;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- CODEX -->
+<div class="modal-overlay" id="modalCodex">
+    <div class="modal" style="width:95%; max-width:500px; height:80vh; display:flex; flex-direction:column; padding:0; background: #0f172a; border-radius: 20px;">
+        <div style="padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--panel-border);">
+            <h2 style="margin:0; font-size:1.2rem; display:flex; align-items:center; gap:10px; color:var(--text);">📖 Codex</h2>
+            <span style="cursor:pointer; font-size:1.5rem; color:var(--text-dim);" onclick="window.UI.closeModals()">✕</span>
+        </div>
+        <div id="codexGridView" style="flex:1; overflow-y:auto; padding:10px;"><div class="codex-grid" id="codexGrid"></div></div>
+        <div id="codexDetailView" class="codex-detail">
+            <div style="position:absolute; top:10px; left:10px; cursor:pointer; font-size:0.9rem; z-index:20; color:var(--primary); display:flex; align-items:center; gap:5px;" onclick="window.UI.backToCodex()"><span>← Retour</span></div>
+            <div style="position:absolute; top:10px; right:10px; cursor:pointer; font-size:1.2rem; z-index:20; color:var(--text-dim);" onclick="window.UI.closeCodexCard()">✕</div>
+            <div style="padding:20px; padding-top:40px; display:flex; flex-direction:column; height:100%;">
+                <div class="cd-header"><div class="cd-icon" id="cdIcon">🎹</div><div class="cd-title"><h3 id="cdName">...</h3><span id="cdSub">...</span></div><button id="cdPlayBtn" class="btn-gold-play" onclick="window.UI.playCodexSound()">▶</button></div>
+                <div class="cd-vis"><canvas id="codexPianoCanvas" width="300" height="100"></canvas></div>
+                <div class="cd-lore"><div class="cd-flavor" id="cdFlavor">...</div><div class="cd-theory" id="cdTheory"></div><div class="cd-coach"><span>🧠</span> <span id="cdCoach">...</span></div><button class="btn-action-train" onclick="window.UI.startTraining()"><span>🎯 S'entraîner sur cet accord</span></button></div>
+                <div class="cd-nav"><button class="nav-btn-round" id="cdPrevBtn">←</button><button class="nav-btn-round" id="cdNextBtn">→</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GAME OVER (Arcade) -->
+<div class="modal-overlay" id="modalGameOver">
+    <div class="modal">
+        <div style="font-size:3rem;">🏁</div>
+        <h2 style="margin:10px 0;">Terminé !</h2>
+        <div style="font-size:3.5rem; font-weight:900; color:var(--gold); line-height:1;" id="endScore">0</div>
+        <div style="color:var(--text-dim); margin-bottom:20px;">Record: <span id="endHighScore">0</span></div>
+        
+        <!-- NEW FEEDBACK AREAS -->
+        <div id="inverseFeedbackArea" style="display:none; gap:10px; margin-bottom:20px; justify-content:center;"></div>
+        <div id="miniLeaderboardArea" style="display:none; flex-direction:column; gap:4px; margin-bottom:20px; background:rgba(0,0,0,0.2); padding:8px; border-radius:12px; font-size:0.8rem; text-align:left; max-height:150px; overflow-y:auto;"></div>
+
+        <div>
+            <button class="cmd-btn btn-action next" style="width:100%; padding:15px;" onclick="window.App.replaySameMode()">Rejouer</button>
+            <button class="cmd-btn btn-listen" style="width:100%; margin-top:10px; padding:15px;" onclick="window.App.setMode('zen'); window.UI.closeModals()">Menu Principal</button>
+        </div>
+    </div>
+</div>
+
+<!-- HUB DEFIS (V5.0 - UNIFIÉ AVEC ARCADE) -->
+<div class="modal-overlay" id="challengeHubModal">
+    <div class="modal" style="height:85vh; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h2 style="margin:0; color:var(--primary); display:flex; align-items:center; gap:10px;">⚔️ L'Arène</h2>
+            <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+        </div>
+
+        <div class="lb-sub-nav">
+            <!-- Nouvel onglet Arcade (Classements) par défaut -->
+            <button class="lb-period-btn active challenge-tab-btn" onclick="window.UI.switchChallengeTab('arcade')">Classements</button>
+            <button class="lb-period-btn challenge-tab-btn" onclick="window.UI.switchChallengeTab('global')">Défi du Jour</button>
+            <button class="lb-period-btn challenge-tab-btn" onclick="window.UI.switchChallengeTab('join')">Rejoindre</button>
+            <button class="lb-period-btn challenge-tab-btn" onclick="window.UI.switchChallengeTab('create')">Créer</button>
+        </div>
+
+        <!-- TAB ARCADE (ANCIEN LEADERBOARD INTEGRÉ) -->
+        <div id="c-tab-arcade" class="challenge-tab-content">
+            <div style="display:flex; gap:5px; margin-bottom:10px; overflow-x:auto; padding-bottom:5px;">
+                <button class="mode-opt active" id="lb-mode-chrono" onclick="window.UI.setLbMode('chrono')" style="flex:1;">⚡ Chrono</button>
+                <button class="mode-opt" id="lb-mode-sprint" onclick="window.UI.setLbMode('sprint')" style="flex:1;">🏃 Sprint</button>
+                <button class="mode-opt" id="lb-mode-inverse" onclick="window.UI.setLbMode('inverse')" style="flex:1;">🎧 Inverse</button>
+            </div>
+            <div class="lb-sub-nav" style="gap:10px; font-size:0.8rem;">
+                <button class="lb-period-btn active" id="lb-period-weekly" onclick="window.UI.setLbPeriod('weekly')">📅 7 Jours</button>
+                <button class="lb-period-btn" id="lb-period-all" onclick="window.UI.setLbPeriod('all')">♾️ Toujours</button>
+            </div>
+            <div id="lb-loader" style="display:none; text-align:center; padding:20px; color:var(--text-dim);">Chargement...</div>
+            <!-- Conteneur cible pour la liste des scores Arcade -->
+            <div id="lb-list" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
+        <!-- TAB GLOBAL (DAILY) -->
+        <div id="c-tab-global" class="challenge-tab-content" style="display:none;">
+            <div class="daily-card" onclick="window.UI.joinDailyChallenge()">
+                <div style="font-size:0.8rem; color:var(--gold); text-transform:uppercase; letter-spacing:1px; font-weight:700;">🔥 Défi du Jour</div>
+                <h2 style="margin:5px 0; color:white;">Daily <span id="dailyDateStr">...</span></h2>
+                <p style="font-size:0.8rem; opacity:0.8;">20 questions • Config Standard • Classement</p>
+                <button class="cmd-btn btn-action" style="margin-top:10px; width:100%;">Jouer</button>
+            </div>
+            <h4 style="margin:20px 0 10px 0; color:var(--text-dim); font-size:0.8rem; text-transform:uppercase;">Classement du Jour</h4>
+            <div id="dailyLeaderboardList" style="display:flex; flex-direction:column; gap:8px;">
+                <div style="text-align:center; padding:20px; color:var(--text-dim);">Chargement...</div>
+            </div>
+        </div>
+
+        <!-- TAB JOIN -->
+        <div id="c-tab-join" class="challenge-tab-content" style="display:none;">
+            <div style="text-align:center; margin-bottom:20px;">
+                <p style="color:var(--text-dim); font-size:0.9rem;">Entrez le code d'un défi pour commencer.</p>
+                <input type="text" id="joinInput" placeholder="EX: LUNDI-123" 
+                       style="background:rgba(0,0,0,0.3); border:1px solid var(--panel-border); color:white; padding:15px; border-radius:12px; font-weight:800; font-size:1.2rem; text-align:center; width:100%; text-transform:uppercase; letter-spacing:2px; margin-top:10px;">
+                
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button class="cmd-btn btn-action" style="flex:1;" onclick="window.UI.joinChallenge()">JOUER</button>
+                    <button class="cmd-btn btn-listen" style="flex:1;" onclick="window.UI.viewChallengeLeaderboard()">VOIR SCORES</button>
+                </div>
+            </div>
+            <div id="join-lb-results"></div>
+            <div style="border-top:1px solid var(--panel-border); padding-top:15px;">
+                <h4 style="margin:0 0 10px 0; color:var(--text-dim);">Règles d'Examen</h4>
+                <ul style="font-size:0.85rem; color:var(--text-dim); text-align:left; padding-left:20px; line-height:1.6;">
+                    <li>Même séquence d'accords pour tout le monde.</li>
+                    <li>Pas de correction immédiate (Mode Aveugle).</li>
+                    <li>Les erreurs sont définitives.</li>
+                    <li>Score basé sur la justesse et la rapidité.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="c-tab-create" class="challenge-tab-content" style="display:none; text-align:center; padding-top:20px;">
+            <button class="cmd-btn btn-action" id="btnOpenStudio" style="width:100%; padding:20px; background:linear-gradient(135deg, #ec4899, #8b5cf6);" onclick="window.App.setMode('studio'); window.UI.closeModals();">
+                <span style="display:block; font-size:2rem; margin-bottom:10px;">🎹</span>
+                <span style="display:block; font-size:1.2rem;">OUVRIR LE STUDIO</span>
+                <span style="display:block; font-size:0.8rem; opacity:0.8; font-weight:400; margin-top:5px;">Composez votre propre dictée</span>
+            </button>
+            
+            <div style="margin:30px 0; display:flex; align-items:center; gap:10px; color:var(--text-dim);">
+                <div style="height:1px; background:var(--panel-border); flex:1;"></div>
+                <span>OU GÉNÉRER</span>
+                <div style="height:1px; background:var(--panel-border); flex:1;"></div>
+            </div>
+
+            <p style="color:var(--text-dim); font-size:0.8rem; margin-bottom:15px;">Création automatique basée sur vos réglages.</p>
+            
+            <div id="createControls">
+                <div class="create-form-group">
+                    <label>Nom du Défi (Seed)</label>
+                    <input type="text" id="createSeedInput" placeholder="Ex: CONTRÔLE-CM2" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--panel-border); background:rgba(0,0,0,0.3); color:white; font-weight:700; text-transform:uppercase;">
+                </div>
+
+                <div class="create-form-group" style="margin-top:15px;">
+                    <label>Longueur</label>
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <button class="mode-opt active" onclick="window.UI.setCreateLength(10)">10</button>
+                        <button class="mode-opt" onclick="window.UI.setCreateLength(20)">20</button>
+                        <button class="mode-opt" onclick="window.UI.setCreateLength(50)">50</button>
+                    </div>
+                </div>
+
+                <button class="cmd-btn btn-action" style="width:100%; margin-top:30px;" onclick="window.UI.createChallengeAction()">Générer le Code</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- RAPPORT DEFI (V5.0) -->
+<div class="modal-overlay" id="challengeReportModal">
+    <!-- Injected by JS -->
+</div>
+
+<div class="modal-overlay" id="modalTutorial">
+    <div class="modal" style="max-width: 450px; text-align: center; padding: 30px 20px;">
+        <div style="font-size:3.5rem; margin-bottom:15px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.1));" id="tutoIcon">🏛️</div>
+        <h2 id="tutoTitle" style="color:var(--gold); margin:0 0 15px 0; text-transform:uppercase; letter-spacing:1px; font-size:1.4rem;">Bienvenue</h2>
+        <p id="tutoText" style="color:#cbd5e1; min-height: 80px; line-height:1.6; font-size:0.95rem; font-weight:400;">
+            </p>
+        
+        <div style="display:flex; justify-content:center; gap:10px; margin:25px 0;">
+            <div class="tuto-dot active" id="dot-0"></div>
+            <div class="tuto-dot" id="dot-1"></div>
+            <div class="tuto-dot" id="dot-2"></div>
+        </div>
+
+        <button class="cmd-btn btn-action" id="tutoBtn" onclick="window.UI.nextTutoStep()" style="width:100%; padding:15px; background:var(--primary); font-size:0.9rem;">SUIVANT</button>
+    </div>
+</div>
+
+<div id="tour-spotlight" class="tour-spotlight"></div>
+<div id="tour-tooltip" class="tour-tooltip">
+    <div id="tour-arrow" class="tour-arrow"></div>
+    <div class="tour-content">
+        <h3 id="tour-title">Titre</h3>
+        <p id="tour-desc">Description</p>
+        <div class="tour-footer">
+            <span id="tour-step-count">1/5</span>
+            <div style="display:flex; gap:10px;">
+                <button class="tour-btn skip" onclick="window.UI.endWalkthrough()">Passer</button>
+                <button class="tour-btn next" onclick="window.UI.nextWalkthroughStep()">Suivant</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="./main.js"></script>
+<script type="module" src="/index.tsx"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker enregistré', reg))
+                    .catch(err => console.log('Erreur SW:', err));
+            });
+        }
+    </script>
+
+
+</body>
+</html>
