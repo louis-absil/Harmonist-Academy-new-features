@@ -400,9 +400,18 @@ export const UI = {
     // --- CHALLENGE HUB (V5.0) ---
     
     showChallengeHub() {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:402',message:'showChallengeHub called',data:{windowWidth:window.innerWidth,windowHeight:window.innerHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+        // #endregion
         this.openModal('challengeHubModal');
         this.switchChallengeTab('arcade'); 
         this.loadDailyChallengeUI();
+        // #region agent log
+        setTimeout(() => {
+            const modal = document.getElementById('challengeHubModal');
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:410',message:'After showChallengeHub (delayed)',data:{modalExists:!!modal,hasOpenClass:modal?.classList.contains('open'),display:modal?window.getComputedStyle(modal).display:'N/A',zIndex:modal?window.getComputedStyle(modal).zIndex:'N/A'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+        }, 100);
+        // #endregion
     },
     
     updateChallengeControls(active) {
@@ -412,8 +421,9 @@ export const UI = {
         if (active) {
             // Mode Défi : Bouton Quitter (Porte)
             btn.innerHTML = "🚪";
-            btn.onclick = () => {
-                if(confirm("Quitter le défi en cours ? Tout progrès sera perdu.")) {
+            btn.onclick = async () => {
+                const confirmed = await window.UI.showConfirmModal("Quitter le défi en cours ? Tout progrès sera perdu.", "Quitter le défi");
+                if(confirmed) {
                     window.ChallengeManager.exit();
                 }
             };
@@ -498,12 +508,30 @@ export const UI = {
                     let color = 'white';
                     
                     // Calcul de la réussite (Moyenne)
-                    const displayScore = s.score !== undefined ? s.score : s.note; 
+                    // FIX: Calculer le nombre de bonnes réponses à partir de note et total
                     const totalPoints = s.total || 20;
-                    const isPass = (displayScore / totalPoints) >= 0.5;
+                    let correctAnswers;
+                    
+                    // Calcul correct : utiliser note si disponible (nouveaux scores), sinon estimer à partir de score
+                    if (s.note !== undefined && s.note !== null) {
+                        // Nouveaux scores : note sur 20, on calcule correctAnswers
+                        correctAnswers = Math.round((s.note / 20) * totalPoints);
+                    } else if (s.score !== undefined && s.score !== null) {
+                        // Anciens scores : score est le total de points, on doit estimer
+                        if (s.score <= totalPoints * 20) {
+                            correctAnswers = Math.max(0, Math.min(totalPoints, Math.round(s.score / 20)));
+                        } else {
+                            // Score trop élevé, on utilise une estimation conservatrice
+                            correctAnswers = Math.round(totalPoints * 0.5); // Estimation à 50%
+                        }
+                    } else {
+                        correctAnswers = 0;
+                    }
+                    
+                    const isPass = (correctAnswers / totalPoints) >= 0.5;
 
                     let rankDisplay = rank;
-                    let scoreDisplay = `${displayScore}/${totalPoints}`;
+                    let scoreDisplay = `${correctAnswers}/${totalPoints}`;
 
                     if(idx===0) { rankDisplay='🥇'; color='var(--gold)'; }
                     else if(idx===1) { rankDisplay='🥈'; color='#e2e8f0'; }
@@ -574,7 +602,8 @@ export const UI = {
             length: 20,
             settings: settings
         };
-        if(confirm(`Lancer le Défi du Jour ?\n\n20 Questions • Mode Académie`)) {
+        const confirmed = await this.showConfirmModal(`Lancer le Défi du Jour ?<br><br>20 Questions • Mode Académie`, "Défi du Jour");
+        if(confirmed) {
             await ChallengeManager.start(challengeData);
         }
     },
@@ -592,20 +621,52 @@ export const UI = {
             length: 20,
             settings: settings
         };
-        if(confirm(`Lancer le Défi du Jour ?\n\n20 Questions • Mode Académie`)) {
+        const confirmed = await this.showConfirmModal(`Lancer le Défi du Jour ?<br><br>20 Questions • Mode Académie`, "Défi du Jour");
+        if(confirmed) {
             await ChallengeManager.start(challengeData);
         }
     },
 
     async joinChallenge() {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:603',message:'joinChallenge called',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+        
         // Cible l'input avec le bon ID (joinInput)
         const input = document.getElementById('joinInput');
-        if(!input) { console.error("Input 'joinInput' introuvable"); return; }
+        if(!input) { 
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:606',message:'joinInput not found',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+            // #endregion
+            console.error("Input 'joinInput' introuvable"); 
+            this.showToast("Erreur : Champ de code introuvable");
+            return; 
+        }
         
         const code = input.value.trim().toUpperCase();
-        if(code.length < 3) return;
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:609',message:'Code extracted from input',data:{code:code,codeLength:code.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+        
+        if(code.length < 3) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:612',message:'Code too short',data:{codeLength:code.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+            // #endregion
+            this.showToast("⚠️ Le code doit contenir au moins 3 caractères");
+            return;
+        }
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:616',message:'Before Cloud.getChallenge',data:{code:code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
         
         let data = await Cloud.getChallenge(code);
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:620',message:'After Cloud.getChallenge',data:{hasData:!!data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+        
         if(!data) {
             data = {
                 id: code,
@@ -619,7 +680,20 @@ export const UI = {
             };
         }
         
-        if(confirm(`Rejoindre le défi "${code}" ?`)) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:632',message:'Before showConfirmModal',data:{code:code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+        
+        const confirmed = await this.showConfirmModal(`Rejoindre le défi "${code}" ?`, "Rejoindre un défi");
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:635',message:'After showConfirmModal',data:{confirmed:confirmed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+        
+        if(confirmed) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:638',message:'Starting challenge',data:{code:code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+            // #endregion
             await ChallengeManager.start(data);
         }
     },
@@ -647,26 +721,46 @@ export const UI = {
                 let rank = idx+1;
                 let color = 'white';
                 
-                const displayScore = s.score !== undefined ? s.score : Math.round((s.note/20) * (s.total||20));
+                // FIX: Calculer le nombre de bonnes réponses à partir de note et total
+                // score est le total de points, pas le nombre de bonnes réponses
                 const totalPoints = s.total || 20;
-                const isPass = (displayScore / totalPoints) >= 0.5;
+                let correctAnswers;
+                
+                // Calcul correct : utiliser note si disponible (nouveaux scores), sinon estimer à partir de score
+                if (s.note !== undefined && s.note !== null) {
+                    // Nouveaux scores : note sur 20, on calcule correctAnswers
+                    correctAnswers = Math.round((s.note / 20) * totalPoints);
+                } else if (s.score !== undefined && s.score !== null) {
+                    // Anciens scores : score est le total de points, on doit estimer
+                    // Si score = 25 et total = 10, cela ne peut pas être 25 bonnes réponses
+                    // On estime : si score est raisonnable, on peut l'utiliser, sinon on calcule
+                    // En général, score = correctAnswers * 20 - mistakes * 5
+                    // Pour simplifier, on estime : correctAnswers ≈ score / 20 (si score < total * 20)
+                    if (s.score <= totalPoints * 20) {
+                        correctAnswers = Math.max(0, Math.min(totalPoints, Math.round(s.score / 20)));
+                    } else {
+                        // Score trop élevé, on utilise une estimation conservatrice
+                        correctAnswers = Math.round(totalPoints * 0.5); // Estimation à 50%
+                    }
+                } else {
+                    correctAnswers = 0;
+                }
+                
+                const isPass = (correctAnswers / totalPoints) >= 0.5;
 
                 let rankDisplay = rank;
-                let scoreDisplay = `${displayScore}/${totalPoints}`;
+                let scoreDisplay = `${correctAnswers}/${totalPoints}`;
 
                 if(idx===0) { rankDisplay='🥇'; color='var(--gold)'; }
                 else if(idx===1) { rankDisplay='🥈'; color='#e2e8f0'; }
                 else if(idx===2) { rankDisplay='🥉'; color='#b45309'; }
                 
                 if (!isPass) {
-                    rankDisplay = '-';
-                    scoreDisplay = `<span style="font-size:0.75rem; font-weight:400; opacity:0.7; color:var(--text-dim);">💪 En progrès</span>`;
+                    rankDisplay = '-'; // On masque le rang exact pour les scores < 50%
                     color = 'var(--text-dim)';
-                    if (isMe) {
-                        const status = window.App.getProgressionStatus(displayScore, totalPoints);
-                        if (status === 'best') { scoreDisplay = `<span style="font-size:0.7rem; font-weight:900; opacity:1; color:var(--cyan);">⭐ Record Perso</span>`; color = 'var(--cyan)'; } 
-                        else if (status === 'trend') { scoreDisplay = `<span style="font-size:0.7rem; font-weight:900; opacity:1; color:var(--success);">📈 En hausse</span>`; color = 'var(--success)'; }
-                    }
+                    // FIX: Masquer le score exact pour tous (y compris l'utilisateur) si < 50%
+                    scoreDisplay = `<span style="font-size:0.75rem; font-weight:400; opacity:0.7; color:var(--text-dim);">💪 En progrès</span>`;
+                    // L'utilisateur verra toujours son pseudo avec "En progrès", mais pas son score exact
                 }
 
                 let masteryHtml = "";
@@ -732,6 +826,9 @@ export const UI = {
     },
 
     renderChallengeReport(report) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:734',message:'renderChallengeReport called',data:{reportId:report?.id,seed:report?.seed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         // Normalisation : accepte soit {chord,userResp} soit l'ancien {correct,given}
         const mistakes = Array.isArray(report.mistakes) ? report.mistakes.map(m => {
             if (m && m.chord && m.userResp) return m;
@@ -760,7 +857,35 @@ export const UI = {
         if(!modal) return;
         
         // VIEW 1: MISTAKES LIST
-        const mistakesHTML = mistakes.map(m => {
+        // FIX: Utiliser le step stocké dans chaque erreur, ou trouver dans attempts
+        const mistakeToQuestionMap = new Map();
+        if (report.attempts && report.mistakes) {
+            // Trouver tous les indices dans attempts où win === false (dans l'ordre chronologique)
+            const errorIndices = [];
+            report.attempts.forEach((attempt, idx) => {
+                if (!attempt.win) {
+                    errorIndices.push(idx);
+                }
+            });
+            
+            // Mapper chaque erreur à son numéro de question réel
+            report.mistakes.forEach((mistake, mistakeIdx) => {
+                // Priorité 1: Utiliser step si disponible
+                if (mistake.step !== undefined) {
+                    mistakeToQuestionMap.set(mistakeIdx, mistake.step + 1); // +1 car step commence à 0
+                } 
+                // Priorité 2: Utiliser l'index dans attempts
+                else if (mistakeIdx < errorIndices.length) {
+                    mistakeToQuestionMap.set(mistakeIdx, errorIndices[mistakeIdx] + 1);
+                } 
+                // Fallback
+                else {
+                    mistakeToQuestionMap.set(mistakeIdx, mistakeIdx + 1);
+                }
+            });
+        }
+        
+        const mistakesHTML = mistakes.map((m, mistakeIdx) => {
             const targetNotesStr = JSON.stringify(m.chord.notes);
             const targetName = m.chord.type.name;
             const targetSub = m.chord.type.sub;
@@ -788,11 +913,14 @@ export const UI = {
                 }
             }
             const userNotesStr = JSON.stringify(userNotes);
+            
+            // FIX: Utiliser le numéro de question réel au lieu de l'index dans mistakes
+            const questionNumber = mistakeToQuestionMap.get(mistakeIdx) || (mistakeIdx + 1);
 
             return `
                 <div class="mistake-row" style="flex-direction:column; align-items:stretch; cursor:default; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <span style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Question ${report.mistakes.indexOf(m) + 1}</span>
+                        <span style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Question ${questionNumber}</span>
                     </div>
                     <div style="display:flex; gap:10px;">
                         <div style="flex:1; background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.3); border-radius:8px; padding:8px; cursor:pointer;" onclick="window.AudioEngine.chord(${targetNotesStr})">
@@ -887,7 +1015,14 @@ export const UI = {
             }).join('');
         }
 
-        const pct = Math.round((report.score / report.total) * 100);
+        // FIX: Calculer le nombre de bonnes réponses à partir de attempts
+        const correctAnswers = report.attempts ? report.attempts.filter(a => a.win).length : 0;
+        const totalQuestions = report.total || (report.attempts ? report.attempts.length : 0);
+        const pct = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:940',message:'Score calculation',data:{reportScore:report.score,correctAnswers:correctAnswers,totalQuestions:totalQuestions,pct:pct},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
+        // #endregion
 
         modal.innerHTML = `
             <div class="modal" style="text-align:center;">
@@ -895,8 +1030,8 @@ export const UI = {
                 <h2 style="margin:0; color:white; font-size:1.5rem;">${report.seed}</h2>
                 
                 <div class="report-score-circle" style="border-color:${pct >= 50 ? 'var(--success)' : 'var(--error)'}; color:${pct >= 50 ? 'var(--success)' : 'var(--error)'};">
-                    <span style="font-size:3.5rem; font-weight:900;">${report.score}</span>
-                    <span style="font-size:1rem; opacity:0.8;">/ ${report.total}</span>
+                    <span style="font-size:3.5rem; font-weight:900;">${correctAnswers}</span>
+                    <span style="font-size:1rem; opacity:0.8;">/ ${totalQuestions}</span>
                     <div style="font-size:0.9rem; margin-top:5px; color:${pct>=50?'var(--success)':'var(--error)'}">${pct}%</div>
                 </div>
 
@@ -920,13 +1055,29 @@ export const UI = {
                     </div>
                 </div>
 
-                <button id="btn-rep-quit" class="cmd-btn btn-action" style="width:100%; margin-top:15px;">
+                <button id="btn-rep-quit" class="cmd-btn btn-action" style="width:100%; margin-top:15px;" onclick="
+                    fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:923',message:'btn-rep-quit clicked (inline onclick)',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    try { window.ChallengeManager?.exit?.(); } catch(e) { window.UI?.closeModals?.(); }
+                ">
                  Quitter
                 </button>
             </div>
         `;
         modal.classList.add('open');
         Audio.sfx('win');
+        
+        // #region agent log
+        const quitBtnAfterRender = document.getElementById('btn-rep-quit');
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:928',message:'After modal.innerHTML - checking btn-rep-quit',data:{buttonExists:!!quitBtnAfterRender,hasOnclick:quitBtnAfterRender?.onclick!==null,hasEventListener:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        
+        // #region agent log
+        setTimeout(() => {
+            const quitBtnDelayed = document.getElementById('btn-rep-quit');
+            const hasListener = quitBtnDelayed && quitBtnDelayed.onclick !== null;
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:930',message:'Delayed check btn-rep-quit listener',data:{buttonExists:!!quitBtnDelayed,hasOnclick:hasListener},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        }, 100);
+        // #endregion
     },
 
     switchReportTab(tab) {
@@ -1593,8 +1744,10 @@ export const UI = {
     },
 
     updateChrono() { 
-        document.getElementById('timerVal').innerText = window.App.session.time; 
-        document.getElementById('livesVal').innerText = '❤️'.repeat(window.App.session.lives); 
+        const timerVal = document.getElementById('timerVal');
+        const livesVal = document.getElementById('livesVal');
+        if (timerVal) timerVal.innerText = window.App.session.time; 
+        if (livesVal) livesVal.innerText = '❤️'.repeat(window.App.session.lives); 
     },
 
     updateBackground(streak) { const body = document.body; if(streak >= 20) body.style.backgroundColor = '#370b1b'; else if(streak >= 10) body.style.backgroundColor = '#1e1b4b'; else body.style.backgroundColor = '#0f172a'; },
@@ -1668,7 +1821,21 @@ export const UI = {
 
     openModal(id, locked = false) { 
         if(id==='settingsModal') window.UI.renderSettings(); if(id==='statsModal') window.UI.renderStats(); if(id==='modalProfile') window.UI.renderProfile();
-        const el = document.getElementById(id); if(el) { el.classList.add('open'); el.onclick = (e) => { if (locked) return; if (e.target === el) window.UI.closeModals(); }; } 
+        const el = document.getElementById(id);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1773',message:'openModal called',data:{id,locked,elementExists:!!el,windowWidth:window.innerWidth,windowHeight:window.innerHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+        // #endregion
+        if(el) { 
+            el.classList.add('open');
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1780',message:'Modal opened',data:{id,hasOpenClass:el.classList.contains('open'),display:window.getComputedStyle(el).display,zIndex:window.getComputedStyle(el).zIndex,opacity:window.getComputedStyle(el).opacity},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+            // #endregion
+            el.onclick = (e) => { if (locked) return; if (e.target === el) window.UI.closeModals(); }; 
+        } else {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1785',message:'Modal element not found',data:{id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+            // #endregion
+        }
     },
     
     openCodex() {
@@ -1700,15 +1867,28 @@ export const UI = {
 
         const quitBtn = document.getElementById('btn-rep-quit');
             if (quitBtn) {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1701',message:'openCodex attaching listener to btn-rep-quit',data:{buttonFound:true,functionName:'openCodex'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                // #endregion
                 quitBtn.addEventListener('click', () => {
             try {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1704',message:'btn-rep-quit clicked in openCodex listener',data:{challengeManagerExists:!!window.ChallengeManager,exitExists:!!window.ChallengeManager?.exit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
                 window.ChallengeManager?.exit?.();
             } catch (e) {
                 console.error("Quit challenge failed:", e);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1707',message:'Quit challenge error caught',data:{error:e?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
                 // Fallback : au moins fermer la modale
                 window.UI?.closeModals?.();
             }
     });
+} else {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1712',message:'openCodex: btn-rep-quit NOT FOUND',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
 }
     },
 
@@ -1905,15 +2085,84 @@ export const UI = {
     },
 
     closeModals() { 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1907',message:'closeModals called',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         const settingsEl = document.getElementById('settingsModal');
         // On regarde si les paramètres sont ouverts AVANT de tout fermer
         const wasSettingsOpen = settingsEl && settingsEl.classList.contains('open');
 
+        const modalsBefore = document.querySelectorAll('.modal-overlay.open');
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1912',message:'Before closing modals',data:{openModalsCount:modalsBefore.length,challengeReportOpen:document.getElementById('challengeReportModal')?.classList.contains('open')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+        // #region agent log
+        const modalsAfter = document.querySelectorAll('.modal-overlay.open');
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:1913',message:'After closing modals',data:{openModalsCount:modalsAfter.length,challengeReportOpen:document.getElementById('challengeReportModal')?.classList.contains('open')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         
         // Si on vient de fermer les paramètres, on déclenche la logique de mise à jour dans App
         if (wasSettingsOpen && window.App && window.App.onSettingsClosed) {
             window.App.onSettingsClosed();
+        }
+    },
+
+    // Modale de confirmation personnalisée (remplace confirm() pour compatibilité Live Preview)
+    confirmModalPromise: null,
+    confirmModalResolve: null,
+    
+    async showConfirmModal(message, title = "Confirmation") {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:2014',message:'showConfirmModal called',data:{title:title,messageLength:message?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+        
+        return new Promise((resolve) => {
+            this.confirmModalPromise = resolve;
+            const modal = document.getElementById('confirmModal');
+            const titleEl = document.getElementById('confirmModalTitle');
+            const messageEl = document.getElementById('confirmModalMessage');
+            
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:2020',message:'showConfirmModal elements check',data:{modalExists:!!modal,titleElExists:!!titleEl,messageElExists:!!messageEl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+            // #endregion
+            
+            if (titleEl) titleEl.innerText = title;
+            if (messageEl) messageEl.innerHTML = message.replace(/\n/g, '<br>');
+            
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('open');
+                // Fermeture au clic sur l'overlay
+                modal.onclick = (e) => {
+                    if (e.target === modal) {
+                        this.confirmModalResolve(false);
+                    }
+                };
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:2032',message:'showConfirmModal modal opened',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+                // #endregion
+            } else {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui.js:2036',message:'showConfirmModal ERROR: modal not found',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+                // #endregion
+                console.error("confirmModal not found in DOM");
+                // Fallback: résoudre immédiatement avec false si la modale n'existe pas
+                resolve(false);
+            }
+        });
+    },
+    
+    confirmModalResolve(result) {
+        const modal = document.getElementById('confirmModal');
+        if (modal) {
+            modal.classList.remove('open');
+            modal.style.display = 'none';
+        }
+        
+        if (this.confirmModalPromise) {
+            this.confirmModalPromise(result);
+            this.confirmModalPromise = null;
         }
     },
     

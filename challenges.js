@@ -108,6 +108,9 @@ export const ChallengeManager = {
     },
 
     restore() {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:110',message:'restore() called',data:{sessionDone:window.App?.session?.done,isChallenge:window.App?.session?.isChallenge},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+        // #endregion
         const App = window.App;
         const backupStr = localStorage.getItem('harmonist_challenge_backup');
         if (backupStr) {
@@ -120,20 +123,96 @@ export const ChallengeManager = {
         
         this.active = false;
         App.session.isChallenge = false;
+        
+        // FIX CRITIQUE: On force session.done à false AVANT toute autre opération
+        // pour éviter que les boutons restent en mode "Suivant"
+        App.session.done = false;
+        App.session.roundLocked = false;
+        
+        // FIX CRITIQUE: Réinitialiser toutes les sélections et l'état de la question
+        // pour éviter que la dernière réponse du défi soit validée dans le mode zen
+        App.session.selC = null;
+        App.session.selI = null;
+        App.session.chord = null;
+        App.session.quizUserChoice = null;
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:130',message:'After setting isChallenge=false and forcing done=false and clearing selections',data:{sessionDone:App.session.done,isChallenge:App.session.isChallenge,selC:App.session.selC,selI:App.session.selI,hasChord:!!App.session.chord,valBtnText:document.getElementById('valBtn')?.innerText,playBtnText:document.getElementById('playBtn')?.innerHTML},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+        // #endregion
 
         // Nettoyage de l'interface unifiée
         if(window.UI.resetChallengeUI) window.UI.resetChallengeUI();
         
         App.loadSet(App.data.currentSet, true);
 
-
         App.rng = Math.random; 
         
         App.loadSet(App.data.currentSet, true);
         App.setMode(App.session.mode);
-        document.getElementById('scoreGroup').classList.remove('active');
+        
+        // FIX: Vérifier que scoreGroup existe avant d'accéder à classList
+        const scoreGroup = document.getElementById('scoreGroup');
+        if (scoreGroup) {
+            scoreGroup.classList.remove('active');
+        }
         
         window.UI.updateChallengeControls(false); // Restore Settings button
+        
+        // FIX CRITIQUE: Forcer la réinitialisation des boutons après setMode()
+        // On utilise setTimeout pour s'assurer que setMode() a fini d'exécuter resetRound() et playNew()
+        setTimeout(() => {
+            const valBtn = document.getElementById('valBtn');
+            const playBtn = document.getElementById('playBtn');
+            
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:158',message:'Before manual button reset (in setTimeout)',data:{sessionDone:App.session.done,valBtnText:valBtn?.innerText,playBtnText:playBtn?.innerHTML},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+            // #endregion
+            
+            if (valBtn) {
+                // FIX: Utiliser innerHTML pour être cohérent avec handleAnswer() qui utilise innerHTML
+                valBtn.innerHTML = "Valider";
+                valBtn.classList.remove('next');
+                valBtn.disabled = true;
+            }
+            if (playBtn) {
+                playBtn.innerHTML = "<span class='icon-lg'>▶</span><span>Écouter</span>";
+                playBtn.disabled = false;
+            }
+            
+            // FIX CRITIQUE: Réinitialiser l'affichage des sélections pour éviter que les boutons restent sélectionnés
+            if (window.UI.renderSel) {
+                window.UI.renderSel();
+            }
+            
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:175',message:'After manual button reset (in setTimeout)',data:{sessionDone:App.session.done,selC:App.session.selC,selI:App.session.selI,hasChord:!!App.session.chord,valBtnText:valBtn?.innerText,playBtnText:playBtn?.innerHTML,valBtnDisabled:valBtn?.disabled},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+            // #endregion
+        }, 100);
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:180',message:'After setMode call (before setTimeout)',data:{sessionDone:App.session.done,isChallenge:App.session.isChallenge,mode:App.session.mode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+        // #endregion
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:195',message:'restore() completed',data:{isChallenge:App.session.isChallenge,active:this.active,mode:App.session.mode,done:App.session.done,hasChord:!!App.session.chord},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+        // #endregion
+        
+        // FIX CRITIQUE: S'assurer qu'une nouvelle question est bien lancée après restore()
+        // setMode() appelle déjà playNew(), mais on veut être sûr que tout est correctement initialisé
+        setTimeout(() => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:200',message:'After restore setTimeout - checking state',data:{done:App.session.done,hasChord:!!App.session.chord,mode:App.session.mode,isChallenge:App.session.isChallenge},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+            // #endregion
+            
+            // Si aucune question n'est chargée, on en lance une nouvelle
+            if (!App.session.chord && App.session.mode !== 'studio') {
+                if (App.session.mode === 'inverse') {
+                    App.playNewQuiz();
+                } else {
+                    App.playNew();
+                }
+            }
+        }, 200);
     },
 
     handleAnswer(win, chord, userResp) {
@@ -163,7 +242,8 @@ export const ChallengeManager = {
         // Format attendu par UI.renderChallengeReport(report)
         this.state.mistakes.push({
             chord,      // objet chord complet (type, notes, inv, etc.)
-            userResp    // la réponse utilisateur
+            userResp,   // la réponse utilisateur
+            step: this.state.step  // FIX: Stocker le numéro de question pour la numérotation correcte
             });
             this.state.score -= 5;
         } else {
@@ -181,19 +261,23 @@ export const ChallengeManager = {
         }
 
         // --- 5. Changement du bouton pour passer à la suite ---
-        const btn = document.getElementById('valBtn');
-        const play = document.getElementById('playBtn');
-        
-        if(btn) {
-            btn.innerHTML = "Question Suivante &gt;&gt;"; 
-            btn.classList.add('next');
-            btn.disabled = false;
-        }
-        
-        // On permet de réécouter si besoin, mais visuellement on suggère d'avancer
-        if(play) {
-            play.innerHTML = "<span class='icon-lg'>▶</span><span>Suivant</span>";
-            play.disabled = false;
+        // FIX: Ne modifier les boutons QUE si on est encore en mode défi actif
+        // Sinon, ils seront réinitialisés par restore() et on ne veut pas les écraser
+        if (this.active && App.session.isChallenge) {
+            const btn = document.getElementById('valBtn');
+            const play = document.getElementById('playBtn');
+            
+            if(btn) {
+                btn.innerHTML = "Question Suivante &gt;&gt;"; 
+                btn.classList.add('next');
+                btn.disabled = false;
+            }
+            
+            // On permet de réécouter si besoin, mais visuellement on suggère d'avancer
+            if(play) {
+                play.innerHTML = "<span class='icon-lg'>▶</span><span>Suivant</span>";
+                play.disabled = false;
+            }
         }
 
         // Prépare le chrono de la prochaine question
@@ -226,7 +310,21 @@ export const ChallengeManager = {
         // 2. Calculs de temps et note
         const endTime = Date.now();
         const totalTime = endTime - this.state.startTime;
-        const finalNote = Math.round((this.state.score / this.config.length) * 20);
+        
+        // FIX CRITIQUE: Calculer la note à partir du nombre de bonnes réponses, pas du score total
+        // this.state.score est un score cumulatif (points), pas le nombre de bonnes réponses
+        // On calcule le nombre de bonnes réponses à partir de attempts
+        const correctAnswers = this.state.attempts ? this.state.attempts.filter(a => a.win === true).length : 0;
+        const finalNote = Math.round((correctAnswers / this.config.length) * 20);
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:313',message:'Calculating finalNote',data:{correctAnswers,total:this.config.length,stateScore:this.state.score,finalNote,attemptsCount:this.state.attempts?.length,attempts:this.state.attempts?.map(a=>a.win)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
+        // #endregion
+        
+        // Validation : s'assurer que finalNote est dans la plage [0, 20]
+        if (finalNote < 0 || finalNote > 20) {
+            console.error("Invalid finalNote calculated:", finalNote, { correctAnswers, total: this.config.length });
+        }
 
         // --- PRÉPARATION DES DONNÉES POUR L'UI ---
         const resultData = {
@@ -330,8 +428,27 @@ export const ChallengeManager = {
     },
 
     exit() {
-        this.restore();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:351',message:'ChallengeManager.exit called',data:{active:this.active},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        try {
+            this.restore();
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:355',message:'restore() completed successfully',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+            // #endregion
+        } catch (e) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:358',message:'restore() threw error',data:{error:e?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+            // #endregion
+            console.error("restore() error:", e);
+        }
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:362',message:'Before closeModals call',data:{uiExists:!!window.UI,closeModalsExists:!!window.UI?.closeModals},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         window.UI.closeModals();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:365',message:'After closeModals call',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         window.UI.showToast("Retour à l'entraînement libre");
     }
 };

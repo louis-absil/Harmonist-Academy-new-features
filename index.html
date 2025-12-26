@@ -390,7 +390,20 @@
                        style="background:rgba(0,0,0,0.3); border:1px solid var(--panel-border); color:white; padding:15px; border-radius:12px; font-weight:800; font-size:1.2rem; text-align:center; width:100%; text-transform:uppercase; letter-spacing:2px; margin-top:10px;">
                 
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button class="cmd-btn btn-action" style="flex:1;" onclick="window.UI.joinChallenge()">JOUER</button>
+                    <button class="cmd-btn btn-action" style="flex:1;" onclick="
+                        console.log('JOUER button clicked');
+                        try {
+                            if(window.UI && window.UI.joinChallenge) {
+                                window.UI.joinChallenge();
+                            } else {
+                                console.error('window.UI or joinChallenge not found', {UI: window.UI, joinChallenge: window.UI?.joinChallenge});
+                                alert('Erreur: UI.joinChallenge non disponible');
+                            }
+                        } catch(e) {
+                            console.error('Error in joinChallenge onclick:', e);
+                            alert('Erreur: ' + e.message);
+                        }
+                    ">JOUER</button>
                     <button class="cmd-btn btn-listen" style="flex:1;" onclick="window.UI.viewChallengeLeaderboard()">VOIR SCORES</button>
                 </div>
             </div>
@@ -445,6 +458,18 @@
 <!-- RAPPORT DEFI (V5.0) -->
 <div class="modal-overlay" id="challengeReportModal">
     <!-- Injected by JS -->
+</div>
+
+<!-- MODALE DE CONFIRMATION PERSONNALISÉE -->
+<div class="modal-overlay" id="confirmModal" style="display:none;">
+    <div class="modal" style="max-width:400px; text-align:center;">
+        <h3 id="confirmModalTitle" style="margin:0 0 15px 0; color:var(--primary);">Confirmation</h3>
+        <p id="confirmModalMessage" style="color:var(--text-dim); margin-bottom:25px; line-height:1.6;"></p>
+        <div style="display:flex; gap:10px;">
+            <button id="confirmModalCancel" class="cmd-btn btn-listen" style="flex:1;" onclick="window.UI.confirmModalResolve(false)">Annuler</button>
+            <button id="confirmModalOk" class="cmd-btn btn-action" style="flex:1;" onclick="window.UI.confirmModalResolve(true)">Confirmer</button>
+        </div>
+    </div>
 </div>
 
 <div class="modal-overlay" id="modalTutorial">

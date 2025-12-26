@@ -434,7 +434,15 @@ export const App = {
     },
 
     setMode(m) {
-        if(this.session.isChallenge && m !== 'zen' && m !== 'studio') return; 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:436',message:'setMode called',data:{mode:m,isChallenge:this.session.isChallenge,currentMode:this.session.mode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+        // #endregion
+        if(this.session.isChallenge && m !== 'zen' && m !== 'studio') {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:437',message:'setMode blocked by isChallenge',data:{mode:m,isChallenge:this.session.isChallenge},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+            // #endregion
+            return;
+        } 
 
         if(this.data.mastery === 0) {
             if(m === 'inverse' && this.data.lvl < 3) { window.UI.showToast("🔒 Débloqué au Niveau 3"); window.UI.vibrate([50,50]); return; }
@@ -449,8 +457,10 @@ export const App = {
         document.getElementById('modeInverse').className = m==='inverse'?'mode-opt active':'mode-opt';
         window.UI.updateModeLocks();
         
-        document.getElementById('chronoDisplay').style.display = (m==='chrono' || m==='sprint') ?'block':'none';
-        if(m === 'sprint') { document.getElementById('timerVal').style.display = 'none'; } else { document.getElementById('timerVal').style.display = 'inline'; }
+        const chronoDisplay = document.getElementById('chronoDisplay');
+        if (chronoDisplay) chronoDisplay.style.display = (m==='chrono' || m==='sprint') ?'block':'none';
+        const timerVal = document.getElementById('timerVal');
+        if (timerVal) timerVal.style.display = (m === 'sprint') ? 'none' : 'inline';
         document.getElementById('toolsBar').className = (m==='sprint') ? 'tools-bar sprint-active' : 'tools-bar';
         
         // Mode Studio UI Toggle
@@ -460,9 +470,11 @@ export const App = {
         const valBtn = document.getElementById('valBtn');
 
         if(m === 'studio') {
-            studioPanel.style.display = 'flex';
-            document.getElementById('chronoDisplay').style.display = 'none';
-            document.getElementById('scoreGroup').classList.remove('active');
+            if (studioPanel) studioPanel.style.display = 'flex';
+            const chronoDisplay = document.getElementById('chronoDisplay');
+            if (chronoDisplay) chronoDisplay.style.display = 'none';
+            const scoreGroup = document.getElementById('scoreGroup');
+            if (scoreGroup) scoreGroup.classList.remove('active');
             
             // REAFFECTATION DES BOUTONS POUR LE STUDIO
             valBtn.innerText = "+ Ajouter";
@@ -499,7 +511,25 @@ export const App = {
         if(m !== 'zen' && m !== 'studio' && !this.session.isChallenge) { document.getElementById('scoreGroup').classList.add('active'); let best = 0; if(m === 'chrono') best = this.data.bestChrono; if(m === 'sprint') best = this.data.bestSprint; if(m === 'inverse') best = this.data.bestInverse; document.getElementById('highScoreVal').innerText = best; } else { if (!this.session.isChallenge) document.getElementById('scoreGroup').classList.remove('active'); }
         
         const mainArea = document.getElementById('mainArea'); const appContainer = document.querySelector('.app-container');
-        if(m === 'inverse') { mainArea.classList.add('quiz-mode'); appContainer.classList.add('quiz-mode'); document.getElementById('panelChord').style.display = 'none'; document.getElementById('invPanel').style.display = 'none'; document.getElementById('quizArea').style.display = 'flex'; } else { mainArea.classList.remove('quiz-mode'); appContainer.classList.remove('quiz-mode'); document.getElementById('panelChord').style.display = 'flex'; document.getElementById('invPanel').style.display = 'flex'; document.getElementById('quizArea').style.display = 'none'; }
+        if(m === 'inverse') { 
+            if (mainArea) mainArea.classList.add('quiz-mode'); 
+            if (appContainer) appContainer.classList.add('quiz-mode'); 
+            const panelChord = document.getElementById('panelChord');
+            const invPanel = document.getElementById('invPanel');
+            const quizArea = document.getElementById('quizArea');
+            if (panelChord) panelChord.style.display = 'none'; 
+            if (invPanel) invPanel.style.display = 'none'; 
+            if (quizArea) quizArea.style.display = 'flex'; 
+        } else { 
+            if (mainArea) mainArea.classList.remove('quiz-mode'); 
+            if (appContainer) appContainer.classList.remove('quiz-mode'); 
+            const panelChord = document.getElementById('panelChord');
+            const invPanel = document.getElementById('invPanel');
+            const quizArea = document.getElementById('quizArea');
+            if (panelChord) panelChord.style.display = 'flex'; 
+            if (invPanel) invPanel.style.display = 'flex'; 
+            if (quizArea) quizArea.style.display = 'none'; 
+        }
         this.resetRound(true);
         if(m === 'inverse') this.playNewQuiz(); else if (m !== 'studio') this.playNew();
     },
@@ -735,9 +765,20 @@ export const App = {
         
         if (this.session.mode !== 'studio') {
             window.UI.msg("Prêt ?");
-            document.getElementById('playBtn').innerHTML = "<span class='icon-lg'>▶</span><span>Écouter</span>";
-            document.getElementById('valBtn').innerText = "Valider"; document.getElementById('valBtn').classList.remove('next'); document.getElementById('valBtn').disabled = true;
-            document.getElementById('hintBtn').disabled = false; document.getElementById('hintBtn').style.opacity = '1';
+            const playBtn = document.getElementById('playBtn');
+            const valBtn = document.getElementById('valBtn');
+            const hintBtn = document.getElementById('hintBtn');
+            if (playBtn) playBtn.innerHTML = "<span class='icon-lg'>▶</span><span>Écouter</span>";
+            if (valBtn) {
+                // FIX: Utiliser innerHTML pour être cohérent avec handleAnswer() qui utilise innerHTML
+                valBtn.innerHTML = "Valider"; 
+                valBtn.classList.remove('next'); 
+                valBtn.disabled = true;
+            }
+            if (hintBtn) {
+                hintBtn.disabled = false; 
+                hintBtn.style.opacity = '1';
+            }
         } else {
              window.UI.msg("Mode Studio");
              // En mode studio, on ne reset pas les boutons car setMode l'a fait
@@ -978,8 +1019,17 @@ export const App = {
         const correctIdx = Math.floor(this.rng() * opts.length);
         this.session.quizCorrectIdx = correctIdx;
         const target = this.session.quizOptions[correctIdx];
-        if (!target) { this.playNewQuiz(); return; }
+        if (!target) { 
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:1022',message:'playNewQuiz: target is null, retrying',data:{optsLength:opts.length,correctIdx,quizOptionsLength:this.session.quizOptions?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'L'})}).catch(()=>{});
+            // #endregion
+            this.playNewQuiz(); 
+            return; 
+        }
         this.session.chord = { ...target, root: fixedBass }; 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:1027',message:'playNewQuiz: calling renderQuizOptions',data:{hasTarget:!!target,targetType:target?.type?.id,targetInv:target?.inv,hasChord:!!this.session.chord},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'L'})}).catch(()=>{});
+        // #endregion
         window.UI.renderQuizOptions(this.session.quizOptions, target); window.UI.msg("Quel est ce son ?", "");
         document.getElementById('playBtn').disabled = true; document.getElementById('replayBtn').disabled = true; document.getElementById('hintBtn').disabled = false;
         document.getElementById('valBtn').innerText = "Valider"; document.getElementById('valBtn').className = "cmd-btn btn-action"; document.getElementById('valBtn').disabled = true;
@@ -1006,7 +1056,10 @@ export const App = {
             this.timerRef = setInterval(() => { this.session.time--; window.UI.updateChrono(); if(this.session.time <= 0) { clearInterval(this.timerRef); this.timerRef = null; this.gameOver(); } }, 1000);
         }
         this.session.done = false; this.session.roundLocked = false; this.session.selC = null; this.session.selI = null; this.session.hint = false; 
-        window.UI.resetVisuals(); this.session.lastActionTime = Date.now(); this.session.replayCount = 0; this.session.djClickTimes = []; this.session.selectionHistory = []; this.session.hasReplayed = false;
+        window.UI.resetVisuals(); 
+        // FIX: Réinitialiser visuellement les sélections pour éviter qu'elles restent affichées
+        window.UI.renderSel();
+        this.session.lastActionTime = Date.now(); this.session.replayCount = 0; this.session.djClickTimes = []; this.session.selectionHistory = []; this.session.hasReplayed = false;
 
         // --- CORRECTIF : AFFICHER LA BARRE EN MODE DÉFI ---
         if (this.session.isChallenge && window.UI && ChallengeManager.active) {
@@ -1163,6 +1216,16 @@ export const App = {
                  return;
              }
 
+             // FIX: Si on n'est plus en mode défi mais que done est encore true, on réinitialise
+             // Cela peut arriver si restore() n'a pas complètement réinitialisé l'état
+             if (!this.session.chord) {
+                 // #region agent log
+                 fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:1195',message:'handleMain: done=true but no chord, resetting',data:{done:this.session.done,isChallenge:this.session.isChallenge,hasChord:!!this.session.chord,mode:this.session.mode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
+                 // #endregion
+                 this.session.done = false;
+                 this.resetRound(true);
+             }
+
              if(this.session.mode === 'inverse') this.playNewQuiz(); 
              else this.playNew(); 
          } 
@@ -1201,7 +1264,13 @@ export const App = {
         if(this.sprintRef) { clearTimeout(this.sprintRef); this.sprintRef = null; }
         if(this.vignetteRef) { clearTimeout(this.vignetteRef); this.vignetteRef = null; }
         document.getElementById('sprintFill').style.transition = 'none'; document.getElementById('vignette').className = 'vignette-overlay';
-        const c = this.session.chord; const okC = this.session.selC === c.type.id; const isDim = c.type.id === 'dim7' && this.data.currentSet !== 'jazz'; const okI = isDim ? true : (this.session.selI === c.inv);
+        const c = this.session.chord;
+        // FIX: Vérifier que chord existe avant d'accéder à ses propriétés
+        if (!c || !c.type) {
+            console.warn("validate() called but chord is null or invalid");
+            return;
+        }
+        const okC = this.session.selC === c.type.id; const isDim = c.type.id === 'dim7' && this.data.currentSet !== 'jazz'; const okI = isDim ? true : (this.session.selI === c.inv);
         
         // HOOK POUR LE MODE DÉFI (V5.0)
         if(this.session.isChallenge) {

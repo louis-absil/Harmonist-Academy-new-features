@@ -348,22 +348,85 @@ export const Cloud = {
     },
 
     async submitChallengeScore(challengeId, scoreData) {
-        if (!userUid || !db) return;
+        // FIX: Vérifier que userUid est bien défini et égal à auth.currentUser.uid
+        const currentUser = auth?.currentUser;
+        if (!currentUser || !userUid || !db) {
+            console.warn("submitChallengeScore: Missing auth or userUid", { hasAuth: !!currentUser, hasUserUid: !!userUid, hasDb: !!db });
+            return;
+        }
+        
+        // FIX: S'assurer que userUid correspond bien à l'utilisateur connecté
+        if (userUid !== currentUser.uid) {
+            console.warn("submitChallengeScore: userUid mismatch", { userUid, currentUid: currentUser.uid });
+            userUid = currentUser.uid; // Corriger userUid si nécessaire
+        }
+        
         try {
             const docId = `${challengeId.toUpperCase()}_${userUid}`;
-            const scoreRef = doc(db, `challenges/${challengeId.toUpperCase()}/scores`, docId);
+            // FIX: Utiliser collection() puis doc() pour les sous-collections
+            const scoreRef = doc(collection(db, `challenges/${challengeId.toUpperCase()}/scores`), docId);
             const snap = await getDoc(scoreRef);
+            
+            // FIX: S'assurer que uid est bien inclus dans les données et que tous les champs requis sont présents
+            const payload = { 
+                uid: userUid, 
+                ...scoreData, 
+                timestamp: serverTimestamp() 
+            };
+            
+            // Log pour debug
+            console.log("Submitting challenge score:", { 
+                challengeId: challengeId.toUpperCase(), 
+                docId, 
+                payload: { ...payload, timestamp: 'serverTimestamp' },
+                note: payload.note,
+                score: payload.score,
+                total: payload.total,
+                uid: payload.uid,
+                authUid: currentUser.uid
+            });
+            
+            // Vérifier que les données respectent les règles Firestore
+            if (payload.note < 0 || payload.note > 50) {
+                console.error("Invalid note value:", payload.note);
+                return;
+            }
+            if (payload.score >= 1000) {
+                console.error("Score too high:", payload.score);
+                return;
+            }
+            if (payload.uid !== currentUser.uid) {
+                console.error("UID mismatch:", { payloadUid: payload.uid, authUid: currentUser.uid });
+                return;
+            }
+            
             if (snap.exists()) {
                 const old = snap.data();
                 if (scoreData.note > old.note || (scoreData.note === old.note && scoreData.time < old.time)) {
-                    await setDoc(scoreRef, { uid: userUid, ...scoreData, timestamp: serverTimestamp() });
+                    await setDoc(scoreRef, payload);
+                    console.log("Challenge score updated successfully");
                 } else if (old.pseudo !== scoreData.pseudo) {
                     await setDoc(scoreRef, { pseudo: scoreData.pseudo }, { merge: true });
+                    console.log("Challenge score pseudo updated");
+                } else {
+                    console.log("Challenge score not updated (no improvement)");
                 }
             } else {
-                await setDoc(scoreRef, { uid: userUid, ...scoreData, timestamp: serverTimestamp() });
+                await setDoc(scoreRef, payload);
+                console.log("Challenge score created successfully");
             }
-        } catch (e) { console.error("Challenge Submit Fail", e); }
+        } catch (e) { 
+            console.error("Challenge Submit Fail", e);
+            // Log détaillé pour debug
+            console.error("Details:", { 
+                challengeId, 
+                userUid, 
+                scoreData, 
+                currentUserUid: currentUser?.uid,
+                errorCode: e?.code,
+                errorMessage: e?.message
+            });
+        }
     },
 
     async getChallengeLeaderboard(challengeId) {
