@@ -10,7 +10,13 @@
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <!-- Favicon standard -->
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 <script type="importmap">
 {
   "imports": {
@@ -79,9 +85,9 @@
             </div>
             <div class="header-actions">
                 <button class="icon-btn" id="btnCodex" onclick="window.UI.openCodex()">📖</button>
-                <button class="icon-btn" id="btnArena" onclick="window.UI.showChallengeHub()" style="color:var(--gold); border:1px solid rgba(251, 191, 36, 0.3);">⚔️</button>
-                <button class="icon-btn" id="btnStats" onclick="window.UI.openModal('statsModal')">📊</button>
-                <button class="icon-btn" id="btnSettings" onclick="window.UI.openModal('settingsModal')">⚙️</button>
+                <button class="icon-btn" id="btnArena" onclick="Audio.sfx('button_click'); window.UI.showChallengeHub()" style="color:var(--gold); border:1px solid rgba(251, 191, 36, 0.3);">⚔️</button>
+                <button class="icon-btn" id="btnStats" onclick="Audio.sfx('button_click'); window.UI.openModal('statsModal')">📊</button>
+                <button class="icon-btn" id="btnSettings" onclick="Audio.sfx('button_click'); window.UI.openModal('settingsModal')">⚙️</button>
             </div>
         </div>
     </header>

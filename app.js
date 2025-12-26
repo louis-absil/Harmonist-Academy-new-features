@@ -471,7 +471,12 @@ export const App = {
         }
         
         if(Audio.ctx && Audio.ctx.state === 'suspended') Audio.ctx.resume();
-        Audio.init(); this.session.mode = m;
+        Audio.init();
+        // Ne pas jouer de son pour les modes chrono et sprint qui perturbent l'écoute
+        if (m !== 'chrono' && m !== 'sprint') {
+            Audio.sfx('mode_switch');
+        }
+        this.session.mode = m;
         document.getElementById('modeZen').className = m==='zen'?'mode-opt active':'mode-opt';
         document.getElementById('modeChrono').className = m==='chrono'?'mode-opt active':'mode-opt';
         document.getElementById('modeSprint').className = m==='sprint'?'mode-opt active':'mode-opt';

@@ -239,6 +239,153 @@ export const Audio = {
             osc.connect(g); g.connect(this.master);
             osc.start(now); osc.stop(now + 0.2);
         }
+        // --- MODAL SFX ---
+        else if (k === 'modal_open') {
+            // Swoosh doux universel
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.08, now + 0.05);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.2);
+        }
+        else if (k === 'modal_settings') {
+            // Blip tech discret
+            const osc = this.ctx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(1000, now);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0.06, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.1);
+        }
+        else if (k === 'modal_stats') {
+            // Swoosh montant (analyse de données)
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.08, now + 0.05);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.2);
+        }
+        else if (k === 'modal_profile') {
+            // Accord doux (personnel)
+            [261.63, 329.63, 392.00].forEach((f, i) => {
+                this.playPureTone(f, now + i * 0.02, 0.25, 'sine');
+            });
+        }
+        else if (k === 'modal_arena') {
+            // Son énergique (défi)
+            const osc = this.ctx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.25);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.12, now + 0.05);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.25);
+        }
+        // --- BUTTON SFX ---
+        else if (k === 'button_click') {
+            // Blip très court
+            const osc = this.ctx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(1500, now);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0.04, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.05);
+        }
+        else if (k === 'button_replay') {
+            // Blip court
+            const osc = this.ctx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, now);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0.05, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.08);
+        }
+        else if (k === 'mode_switch') {
+            // Transition douce
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.06, now + 0.03);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.15);
+        }
+        // --- BUTTON CONFIRM/CANCEL SFX ---
+        else if (k === 'button_confirm') {
+            // Son de confirmation positive
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, now); // Do
+            osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15); // Mi
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.08, now + 0.05);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.2);
+        }
+        else if (k === 'button_cancel') {
+            // Son d'annulation (descendant)
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.15);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.06, now + 0.05);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.15);
+        }
+        // --- TOGGLE SFX ---
+        else if (k === 'toggle_on') {
+            // Son de toggle activé (montant)
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(700, now + 0.1);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.06, now + 0.03);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.1);
+        }
+        else if (k === 'toggle_off') {
+            // Son de toggle désactivé (descendant)
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(350, now + 0.1);
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.06, now + 0.03);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.connect(g); g.connect(this.master);
+            osc.start(now); osc.stop(now + 0.1);
+        }
     },
     loop() { const cvs = document.getElementById('visualizer'); const c = cvs.getContext('2d'); const draw = () => { requestAnimationFrame(draw); if(!this.ctx) return; if (cvs.width !== cvs.clientWidth) { cvs.width = cvs.clientWidth; cvs.height = cvs.clientHeight; } c.clearRect(0,0,cvs.width,cvs.height); if(Math.random() > 0.92) { c.fillStyle = `rgba(99, 102, 241, ${Math.random()*0.2})`; const w = Math.random() * cvs.width; const x = Math.random() * cvs.width; c.fillRect(x, 0, w/4, cvs.height); } }; draw(); }
 };

@@ -9,6 +9,7 @@ import { ChallengeManager } from './challenges.js';
 window.App = App;
 window.UI = UI;
 window.Piano = Piano;
+window.Audio = Audio;
 window.AudioEngine = Audio;
 window.ChallengeManager = ChallengeManager;
 

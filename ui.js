@@ -2524,6 +2524,25 @@ export const UI = {
 
     openModal(id, locked = false) { 
         if(id==='settingsModal') window.UI.renderSettings(); if(id==='statsModal') window.UI.renderStats(); if(id==='modalProfile') window.UI.renderProfile();
+        
+        // Mapping modalId → son approprié
+        const modalSounds = {
+            'settingsModal': 'modal_settings',
+            'statsModal': 'modal_stats',
+            'modalProfile': 'modal_profile',
+            'challengeHubModal': 'modal_arena',
+            'challengeReportModal': null, // Déjà géré avec 'win' dans renderChallengeReport
+            'modalGameOver': null // Probablement géré ailleurs
+        };
+        
+        // Jouer le son approprié (sauf si null ou si c'est le codex qui a son propre son)
+        if (id !== 'modalCodex' && modalSounds[id] !== null && modalSounds[id] !== undefined) {
+            Audio.sfx(modalSounds[id]);
+        } else if (modalSounds[id] === undefined) {
+            // Son générique pour les modales non mappées
+            Audio.sfx('modal_open');
+        }
+        
         const el = document.getElementById(id);
         if(el) { 
             el.classList.add('open');
@@ -2847,6 +2866,13 @@ export const UI = {
             modal.style.display = 'none';
         }
         
+        // Son approprié selon l'action
+        if (result) {
+            Audio.sfx('button_confirm');
+        } else {
+            Audio.sfx('button_cancel');
+        }
+        
         if (this.confirmModalPromise) {
             this.confirmModalPromise(result);
             this.confirmModalPromise = null;
@@ -2922,6 +2948,24 @@ export const UI = {
             });
         }
         if(d.currentSet === 'jazz' || d.currentSet === 'laboratory') document.getElementById('rowToggleOpen').style.display='none'; else document.getElementById('rowToggleOpen').style.display='flex';
+        
+        // Ajouter un son pour le toggle "Position Ouverte"
+        const toggleOpen = document.getElementById('toggleOpen');
+        if (toggleOpen) {
+            toggleOpen.checked = d.settings.open || false;
+            // Supprimer les anciens listeners pour éviter les doublons
+            const newToggle = toggleOpen.cloneNode(true);
+            toggleOpen.parentNode.replaceChild(newToggle, toggleOpen);
+            
+            newToggle.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                // Sauvegarder la valeur dans les données
+                window.App.data.settings.open = isChecked;
+                // Jouer le son approprié
+                Audio.sfx(isChecked ? 'toggle_on' : 'toggle_off');
+            });
+        }
+        
         const gen = (arr, type, dest) => { document.getElementById(dest).innerHTML = arr.map(x => { const active = (type==='c'?d.settings.activeC:d.settings.activeI).includes(x.id); let locked = window.App.isLocked(x.id); let cls = `setting-chip ${active?'active':''} ${locked?'locked':''}`; const visual = this.getLabel(x, type); return `<div class="${cls}" onclick="window.App.toggleSetting('${type}', ${typeof x.id==='string'?"'"+x.id+"'":x.id})">${visual}</div>`; }).join(''); }; 
         gen(DB.chords, 'c', 'settingsChords'); 
         if(d.currentSet === 'laboratory') { const labOpts = [ {id: 0, name: "Pos. Alpha (0)", corr: "d8↳/Chrom/Sus2"}, {id: 1, name: "Pos. Beta (1)", corr: "d8↗/Vien/Sus4"}, {id: 2, name: "Pos. Gamma (2)", corr: "a8↳/1t/4al"}, {id: 3, name: "Pos. Delta (3)", corr: "a8↗/Octat/5tal"} ]; gen(labOpts, 'i', 'settingsInvs'); } else { gen(DB.currentInvs, 'i', 'settingsInvs'); }
