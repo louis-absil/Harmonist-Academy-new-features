@@ -444,13 +444,7 @@ export const App = {
     },
 
     setMode(m) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:436',message:'setMode called',data:{mode:m,isChallenge:this.session.isChallenge,currentMode:this.session.mode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
-        // #endregion
         if(this.session.isChallenge && m !== 'zen' && m !== 'studio') {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:437',message:'setMode blocked by isChallenge',data:{mode:m,isChallenge:this.session.isChallenge},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
-            // #endregion
             return;
         } 
 
@@ -1047,16 +1041,10 @@ export const App = {
         this.session.quizCorrectIdx = correctIdx;
         const target = this.session.quizOptions[correctIdx];
         if (!target) { 
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:1022',message:'playNewQuiz: target is null, retrying',data:{optsLength:opts.length,correctIdx,quizOptionsLength:this.session.quizOptions?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'L'})}).catch(()=>{});
-            // #endregion
             this.playNewQuiz(); 
             return; 
         }
         this.session.chord = { ...target, root: fixedBass }; 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:1027',message:'playNewQuiz: calling renderQuizOptions',data:{hasTarget:!!target,targetType:target?.type?.id,targetInv:target?.inv,hasChord:!!this.session.chord},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'L'})}).catch(()=>{});
-        // #endregion
         window.UI.renderQuizOptions(this.session.quizOptions, target); window.UI.msg("Quel est ce son ?", "");
         document.getElementById('playBtn').disabled = true; document.getElementById('replayBtn').disabled = true; document.getElementById('hintBtn').disabled = false;
         document.getElementById('valBtn').innerText = "Valider"; document.getElementById('valBtn').className = "cmd-btn btn-action"; document.getElementById('valBtn').disabled = true;
@@ -1246,9 +1234,6 @@ export const App = {
              // FIX: Si on n'est plus en mode défi mais que done est encore true, on réinitialise
              // Cela peut arriver si restore() n'a pas complètement réinitialisé l'état
              if (!this.session.chord) {
-                 // #region agent log
-                 fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:1195',message:'handleMain: done=true but no chord, resetting',data:{done:this.session.done,isChallenge:this.session.isChallenge,hasChord:!!this.session.chord,mode:this.session.mode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
-                 // #endregion
                  this.session.done = false;
                  this.resetRound(true);
              }
@@ -1467,7 +1452,9 @@ export const App = {
         let unlockedSomething = false;
         const hadBadges = this.data.badges.length > 0;
         BADGES.forEach(b => {
-            if(!this.data.badges.includes(b.id)) { if(b.check(this.data, this.session)) { this.data.badges.push(b.id); window.UI.showBadge(b); unlockedSomething = true; this.saveData(); } }
+            if(!this.data.badges.includes(b.id)) {
+                if(b.check(this.data, this.session)) { this.data.badges.push(b.id); window.UI.showBadge(b); unlockedSomething = true; this.saveData(); }
+            }
         });
         
         // Hook : Vérifier si c'est le premier badge débloqué

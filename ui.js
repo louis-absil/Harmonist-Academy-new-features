@@ -1643,7 +1643,8 @@ export const UI = {
                 </button>
             </div>
         `;
-        modal.classList.add('open');
+        // FIX: Utiliser openModal pour s'assurer que la modale est visible
+        this.openModal('challengeReportModal');
         Audio.sfx('win');
     },
 

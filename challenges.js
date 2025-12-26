@@ -77,6 +77,10 @@ export const ChallengeManager = {
         };
 
         App.session.isChallenge = true;
+        // FIX: Réinitialiser globalOk et globalTot pour les badges (b_crash)
+        // Ces stats doivent refléter uniquement le défi en cours, pas les stats globales
+        App.session.challengeGlobalOk = 0;
+        App.session.challengeGlobalTot = 0;
         App.rng = this.seedFunc; 
         
         if (challengeData.settings) {
@@ -116,9 +120,6 @@ export const ChallengeManager = {
     },
 
     restore() {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:110',message:'restore() called',data:{sessionDone:window.App?.session?.done,isChallenge:window.App?.session?.isChallenge},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
         const App = window.App;
         const backupStr = localStorage.getItem('harmonist_challenge_backup');
         if (backupStr) {
@@ -143,10 +144,6 @@ export const ChallengeManager = {
         App.session.selI = null;
         App.session.chord = null;
         App.session.quizUserChoice = null;
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:130',message:'After setting isChallenge=false and forcing done=false and clearing selections',data:{sessionDone:App.session.done,isChallenge:App.session.isChallenge,selC:App.session.selC,selI:App.session.selI,hasChord:!!App.session.chord,valBtnText:document.getElementById('valBtn')?.innerText,playBtnText:document.getElementById('playBtn')?.innerHTML},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
 
         // Nettoyage de l'interface unifiée
         if(window.UI.resetChallengeUI) window.UI.resetChallengeUI();
@@ -172,10 +169,6 @@ export const ChallengeManager = {
             const valBtn = document.getElementById('valBtn');
             const playBtn = document.getElementById('playBtn');
             
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:158',message:'Before manual button reset (in setTimeout)',data:{sessionDone:App.session.done,valBtnText:valBtn?.innerText,playBtnText:playBtn?.innerHTML},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-            // #endregion
-            
             if (valBtn) {
                 // FIX: Utiliser innerHTML pour être cohérent avec handleAnswer() qui utilise innerHTML
                 valBtn.innerHTML = "Valider";
@@ -191,27 +184,11 @@ export const ChallengeManager = {
             if (window.UI.renderSel) {
                 window.UI.renderSel();
             }
-            
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:175',message:'After manual button reset (in setTimeout)',data:{sessionDone:App.session.done,selC:App.session.selC,selI:App.session.selI,hasChord:!!App.session.chord,valBtnText:valBtn?.innerText,playBtnText:playBtn?.innerHTML,valBtnDisabled:valBtn?.disabled},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-            // #endregion
         }, 100);
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:180',message:'After setMode call (before setTimeout)',data:{sessionDone:App.session.done,isChallenge:App.session.isChallenge,mode:App.session.mode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:195',message:'restore() completed',data:{isChallenge:App.session.isChallenge,active:this.active,mode:App.session.mode,done:App.session.done,hasChord:!!App.session.chord},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
-        // #endregion
         
         // FIX CRITIQUE: S'assurer qu'une nouvelle question est bien lancée après restore()
         // setMode() appelle déjà playNew(), mais on veut être sûr que tout est correctement initialisé
         setTimeout(() => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:200',message:'After restore setTimeout - checking state',data:{done:App.session.done,hasChord:!!App.session.chord,mode:App.session.mode,isChallenge:App.session.isChallenge},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
-            // #endregion
-            
             // Si aucune question n'est chargée, on en lance une nouvelle
             if (!App.session.chord && App.session.mode !== 'studio') {
                 if (App.session.mode === 'inverse') {
@@ -228,6 +205,13 @@ export const ChallengeManager = {
         const nowMs = performance.now();
         const timeSpentMs = nowMs - (this.state.qStartMs ?? nowMs);
         this.state.netTime += timeSpentMs;
+        
+        // FIX: Mettre à jour challengeGlobalOk et challengeGlobalTot pour les badges (b_crash)
+        // Ces stats doivent refléter uniquement le défi en cours, pas les stats globales
+        if (!window.App.session.challengeGlobalTot) window.App.session.challengeGlobalTot = 0;
+        if (!window.App.session.challengeGlobalOk) window.App.session.challengeGlobalOk = 0;
+        window.App.session.challengeGlobalTot++;
+        if (win) window.App.session.challengeGlobalOk++;
 
         // --- 2. Enregistrement de l'historique ---
         this.state.history.push({ 
@@ -310,6 +294,14 @@ export const ChallengeManager = {
     },
 
     async finish() {
+        // FIX: Empêcher les appels multiples
+        if (!this.active) {
+            return;
+        }
+        
+        // Désactiver immédiatement pour éviter les appels multiples
+        this.active = false;
+        
         const App = window.App;
         
         // 1. Son de fin
@@ -324,10 +316,6 @@ export const ChallengeManager = {
         // On calcule le nombre de bonnes réponses à partir de attempts
         const correctAnswers = this.state.attempts ? this.state.attempts.filter(a => a.win === true).length : 0;
         const finalNote = Math.round((correctAnswers / this.config.length) * 20);
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'challenges.js:313',message:'Calculating finalNote',data:{correctAnswers,total:this.config.length,stateScore:this.state.score,finalNote,attemptsCount:this.state.attempts?.length,attempts:this.state.attempts?.map(a=>a.win)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
-        // #endregion
         
         // Validation : s'assurer que finalNote est dans la plage [0, 20]
         if (finalNote < 0 || finalNote > 20) {
@@ -425,13 +413,17 @@ export const ChallengeManager = {
                 App.session.challengeRank = myEntryIndex + 1;
                 App.session.challengeTotalPlayers = lb.length;
                 App.session.challengeNetTime = this.state.netTime; // Important pour badges speedrunner
-                
+                App.checkBadges();
+            } else {
+                // FIX: Vérifier les badges même si l'utilisateur n'est pas dans le leaderboard
+                // (Champion, Rituel, Maître du Jeu ne dépendent pas du classement)
+                App.session.challengeNetTime = this.state.netTime; // Important pour badges speedrunner
                 App.checkBadges();
             }
 
         } catch (e) { 
             // On log l'erreur pour le debug, mais l'utilisateur ne s'en rendra pas compte (UX préservée)
-            console.error("Cloud Flow Error (Background):", e); 
+            console.error("Cloud Flow Error (Background):", e);
         }
     },
 

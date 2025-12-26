@@ -300,7 +300,7 @@ export const BADGES = [
 
     // BADGES SECRETS ARÈNE (CORRIGÉS POUR VÉRIFIER LONGUEUR 20)
     { id: 'b_aube', category: 'arena', secret: true, icon: '🌅', title: "L'Aube Nouvelle", desc: "L'avenir appartient à ceux qui se lèvent tôt (6h-9h)", check: (d, s) => { if(!s.isChallenge) return false; const h = new Date().getHours(); return h >= 6 && h < 9; }},
-    { id: 'b_crash', category: 'arena', secret: true, icon: '😵', title: "Le Crash Test", desc: "Un score parfait... dans le mauvais sens (0/20)", check: (d, s) => s.isChallenge && s.globalOk === 0 && s.globalTot >= 20 },
+    { id: 'b_crash', category: 'arena', secret: true, icon: '😵', title: "Le Crash Test", desc: "Un score parfait... dans le mauvais sens (0/20)", check: (d, s) => s.isChallenge && s.challengeGlobalOk === 0 && s.challengeGlobalTot >= 20 },
     { id: 'b_speed', category: 'arena', secret: true, icon: '🏎️', title: "Speedrunner", desc: "Réflexion pure < 60s sur 20 questions", check: (d, s) => s.isChallenge && s.challengeNetTime > 0 && s.challengeNetTime < 60000 && s.lastChallengeLength === 20 },
 
     // --- SUPER-CATÉGORIE: CARRIÈRE (Gameplay, Modes, Sets) ---
