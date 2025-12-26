@@ -395,7 +395,7 @@ export const App = {
         
         if(DB.sets[setName].mode === 'jazz') { DB.currentInvs = DB.voicings; document.getElementById('invPanelLabel').innerText = "Voicing (Texture)"; } 
         else if (DB.sets[setName].mode === 'lab') { DB.currentInvs = []; document.getElementById('invPanelLabel').innerText = "Configuration"; } 
-        else { DB.currentInvs = DB.invs; document.getElementById('invPanelLabel').innerText = "Renversement (A Z E R)"; }
+        else { DB.currentInvs = DB.invs; document.getElementById('invPanelLabel').innerText = "Renversement"; }
         
         const validIds = DB.chords.map(c => c.id);
         const hasInvalid = this.data.settings.activeC.some(id => !validIds.includes(id));

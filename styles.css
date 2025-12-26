@@ -616,7 +616,53 @@ canvas { width: 100%; height: 100%; position: absolute; top:0; left:0; }
 .game-area.quiz-mode { grid-template-columns: 1fr; } 
 
 .panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); transition: opacity 0.3s; height: 100%; overflow: hidden; }
-.panel-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-dim); font-weight: 800; letter-spacing: 1px; margin-bottom: 6px; display: flex; justify-content: space-between; flex-shrink: 0; }
+.panel-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-dim); font-weight: 800; letter-spacing: 1px; margin-bottom: 6px; display: flex; justify-content: space-between; flex-shrink: 0; align-items: center; }
+
+/* --- SCHÉMA CLAVIER VISUEL POUR RACCOURCIS --- */
+.keyboard-shortcut-visual {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.keyboard-key {
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    transition: all 0.2s ease;
+}
+
+.keyboard-key.highlight {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+/* Masquer le schéma et les textes de raccourcis en mode mobile */
+@media (max-width: 768px) {
+    .keyboard-shortcut-visual {
+        display: none !important;
+    }
+    .shortcuts-text-mobile {
+        display: none !important;
+    }
+}
+
+/* En desktop, masquer le texte et afficher le schéma */
+@media (min-width: 769px) {
+    .shortcuts-text-mobile {
+        display: none;
+    }
+}
 
 /* GENERIC GRID STYLES */
 .pad-grid { 

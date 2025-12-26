@@ -2243,6 +2243,21 @@ export const UI = {
                 }
             }
         }
+
+        // Rendre les schémas de clavier pour les raccourcis
+        // Vérifier si on est en mode desktop
+        const isDesktop = window.innerWidth > 768;
+        
+        if (isDesktop) {
+            // Schéma pour les accords (1-6)
+            this.renderKeyboardShortcuts('chords', ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6']);
+            
+            // Schéma pour les renversements (Q W E R)
+            // Seulement si ce n'est pas le mode laboratory
+            if (!isLab) {
+                this.renderKeyboardShortcuts('inversions', ['KeyQ', 'KeyW', 'KeyE', 'KeyR']);
+            }
+        }
     },
 
     renderSel() {
@@ -3160,6 +3175,54 @@ export const UI = {
 
         // 4. Affichage
         modal.classList.add('active');
+    },
+
+    renderKeyboardShortcuts(type, keyCodes) {
+        // Ne pas afficher en mode mobile
+        if (window.innerWidth <= 768) {
+            return;
+        }
+
+        let containerId;
+        let keysToShow = [];
+
+        if (type === 'chords') {
+            containerId = 'chordShortcutsVisual';
+            // Pour les accords : afficher les touches 1-6
+            keysToShow = [
+                { code: 'Digit1', label: '1', highlight: keyCodes.includes('Digit1') || keyCodes.includes('Numpad1') },
+                { code: 'Digit2', label: '2', highlight: keyCodes.includes('Digit2') || keyCodes.includes('Numpad2') },
+                { code: 'Digit3', label: '3', highlight: keyCodes.includes('Digit3') || keyCodes.includes('Numpad3') },
+                { code: 'Digit4', label: '4', highlight: keyCodes.includes('Digit4') || keyCodes.includes('Numpad4') },
+                { code: 'Digit5', label: '5', highlight: keyCodes.includes('Digit5') || keyCodes.includes('Numpad5') },
+                { code: 'Digit6', label: '6', highlight: keyCodes.includes('Digit6') || keyCodes.includes('Numpad6') }
+            ];
+        } else if (type === 'inversions') {
+            containerId = 'invShortcutsVisual';
+            // Pour les renversements : afficher Q W E R (positions physiques, pas les caractères)
+            // Le code utilise KeyQ, KeyW, KeyE, KeyR qui sont universels
+            keysToShow = [
+                { code: 'KeyQ', label: 'Q', highlight: keyCodes.includes('KeyQ') },
+                { code: 'KeyW', label: 'W', highlight: keyCodes.includes('KeyW') },
+                { code: 'KeyE', label: 'E', highlight: keyCodes.includes('KeyE') },
+                { code: 'KeyR', label: 'R', highlight: keyCodes.includes('KeyR') }
+            ];
+        } else {
+            return;
+        }
+
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // Générer le HTML du schéma
+        let html = '<div class="keyboard-shortcut-visual">';
+        keysToShow.forEach(key => {
+            const highlightClass = key.highlight ? ' highlight' : '';
+            html += `<div class="keyboard-key${highlightClass}" data-key="${key.code}">${key.label}</div>`;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
     },
 
 };
