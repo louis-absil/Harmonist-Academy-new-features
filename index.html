@@ -176,7 +176,8 @@
 <!-- SETTINGS -->
 <div class="modal-overlay" id="settingsModal">
     <div class="modal">
-        <div style="display:flex; justify-content:flex-end;">
+        <div style="display:flex; justify-content:flex-end; gap:10px; align-items:center;">
+            <span class="modal-help-icon" onclick="window.UI.startTutorialModule('settings')" title="Aide">?</span>
             <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
         </div>
         <div class="brand-title" onclick="window.App.clickTitle()">
@@ -207,9 +208,6 @@
         <div id="settingsChords" class="settings-grid"></div>
         <h4 style="text-align:left; color:var(--primary); margin:15px 0 5px 0;">Variations</h4>
         <div id="settingsInvs" class="settings-grid"></div>
-        <button class="cmd-btn btn-listen" onclick="window.UI.openTutorial()" style="width:100%; margin-top:20px; padding:12px; border:1px solid var(--gold); color:var(--gold);">
-            🎓 Guide de l'Académie
-        </button>
         <button class="cmd-btn" id="btnResetSave" onclick="window.App.hardReset()" style="width:100%; margin-top:20px; background:rgba(239, 68, 68, 0.2); color:var(--error); padding:10px;">⚠️ Réinitialiser</button>
     </div>
 </div>
@@ -217,7 +215,8 @@
 <!-- PROFILE -->
 <div class="modal-overlay" id="modalProfile">
     <div class="modal">
-        <div style="position:absolute; top:15px; right:15px; z-index:50;">
+        <div style="position:absolute; top:15px; right:15px; z-index:50; display:flex; gap:10px; align-items:center;">
+            <span class="modal-help-icon" onclick="window.UI.startTutorialModule('progression')" title="Aide" style="position:static;">?</span>
             <span style="cursor:pointer; font-size:1.5rem; background:rgba(0,0,0,0.5); width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1px solid rgba(255,255,255,0.1);" onclick="window.UI.closeModals()">✕</span>
         </div>
 
@@ -281,7 +280,10 @@
     <div class="modal" style="text-align:left;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h2 style="margin:0;">Statistiques</h2>
-            <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <span class="modal-help-icon" onclick="window.UI.startTutorialModule('stats')" title="Aide">?</span>
+                <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+            </div>
         </div>
         <div class="coach-box" id="coachDisplay"></div>
         <h4 style="margin:0 0 10px 0; font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Historique de Précision</h4>
@@ -301,7 +303,10 @@
     <div class="modal" style="width:95%; max-width:500px; height:80vh; display:flex; flex-direction:column; padding:0; background: #0f172a; border-radius: 20px;">
         <div style="padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--panel-border);">
             <h2 style="margin:0; font-size:1.2rem; display:flex; align-items:center; gap:10px; color:var(--text);">📖 Codex</h2>
-            <span style="cursor:pointer; font-size:1.5rem; color:var(--text-dim);" onclick="window.UI.closeModals()">✕</span>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <span class="modal-help-icon" onclick="window.UI.startTutorialModule('codex')" title="Aide">?</span>
+                <span style="cursor:pointer; font-size:1.5rem; color:var(--text-dim);" onclick="window.UI.closeModals()">✕</span>
+            </div>
         </div>
         <div id="codexGridView" style="flex:1; overflow-y:auto; padding:10px;"><div class="codex-grid" id="codexGrid"></div></div>
         <div id="codexDetailView" class="codex-detail">
@@ -341,7 +346,10 @@
     <div class="modal" style="height:85vh; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <h2 style="margin:0; color:var(--primary); display:flex; align-items:center; gap:10px;">⚔️ L'Arène</h2>
-            <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <span class="modal-help-icon" onclick="window.UI.startTutorialModule('arena')" title="Aide">?</span>
+                <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+            </div>
         </div>
 
         <div class="lb-sub-nav">

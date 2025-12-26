@@ -1427,4 +1427,33 @@ input:checked + .slider { background: var(--primary); } input:checked + .slider:
     display: none !important;
 }
 
+/* --- ICÔNES D'AIDE DANS LES MODALES --- */
+.modal-help-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--text-dim);
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.modal-help-icon:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.modal-help-icon:active {
+    transform: scale(0.95);
+}
+
 }

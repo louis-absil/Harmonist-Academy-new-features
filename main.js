@@ -100,6 +100,16 @@ document.addEventListener('keydown', e => {
 // Initialization
 window.onload = () => {
     App.init();
+    
+    // Hook : Vérifier si c'est la première visite et déclencher le tutoriel d'accueil
+    setTimeout(() => {
+        if (!localStorage.getItem('tuto_first_visit')) {
+            const moduleId = window.UI.checkTutorialTriggers({ type: 'firstVisit' });
+            if (moduleId) {
+                window.UI.startTutorialModule(moduleId);
+            }
+        }
+    }, 1000); // Délai pour laisser l'app s'initialiser
 };
 
 // GESTION DE LA FERMETURE / MINIMISATION (Mobile & Desktop)

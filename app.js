@@ -429,7 +429,17 @@ export const App = {
             this.data.mastery++; this.data.lvl = 1; this.data.xp = 0; this.data.next = 100;
             this.data.settings.activeC = this.data.settings.activeC.filter(id => !this.isLocked(id));
             if(this.data.settings.activeC.length === 0) { const available = DB.chords.find(c => !this.isLocked(c.id)); if(available) this.data.settings.activeC = [available.id]; }
-            this.saveData(); window.UI.closeModals(); window.UI.renderBoard(); window.UI.updateHeader(); Audio.sfx('prestige'); window.UI.confetti(); setTimeout(() => window.UI.confetti(), 500); setTimeout(() => window.UI.confetti(), 1000); window.UI.showToast(`✨ Maîtrise ${this.data.mastery} atteinte !`); window.UI.showToast(`Nouveau contenu disponible dans les paramètres !`); window.UI.updateModeLocks(); setTimeout(() => { this.playNew(); }, 4000);
+            this.saveData(); window.UI.closeModals(); window.UI.renderBoard(); window.UI.updateHeader(); Audio.sfx('prestige'); window.UI.confetti(); setTimeout(() => window.UI.confetti(), 500); setTimeout(() => window.UI.confetti(), 1000); window.UI.showToast(`✨ Maîtrise ${this.data.mastery} atteinte !`); window.UI.showToast(`Nouveau contenu disponible dans les paramètres !`); window.UI.updateModeLocks(); 
+            
+            // Hook : Vérifier si un tutoriel de maîtrise doit s'afficher
+            setTimeout(() => {
+                const moduleId = window.UI.checkTutorialTriggers({ type: 'masteryUnlock' });
+                if (moduleId) {
+                    window.UI.startTutorialModule(moduleId);
+                }
+            }, 2000);
+            
+            setTimeout(() => { this.playNew(); }, 4000);
         }
     },
 
@@ -449,6 +459,23 @@ export const App = {
             if(m === 'chrono' && this.data.lvl < 8) { window.UI.showToast("🔒 Débloqué au Niveau 8"); window.UI.vibrate([50,50]); return; }
             if(m === 'sprint' && this.data.lvl < 12) { window.UI.showToast("🔒 Débloqué au Niveau 12"); window.UI.vibrate([50,50]); return; }
         }
+        
+        // Hook : Vérifier si un mode vient d'être débloqué pour la première fois
+        if (m !== 'zen' && m !== 'studio') {
+            // Vérifier si c'est la première fois qu'on utilise ce mode après déblocage
+            const modeKey = `tuto_mode_${m}_used`;
+            const wasUsed = localStorage.getItem(modeKey) === 'true';
+            if (!wasUsed) {
+                localStorage.setItem(modeKey, 'true');
+                setTimeout(() => {
+                    const moduleId = window.UI.checkTutorialTriggers({ type: 'modeUnlock', mode: m });
+                    if (moduleId) {
+                        window.UI.startTutorialModule(moduleId);
+                    }
+                }, 500);
+            }
+        }
+        
         if(Audio.ctx && Audio.ctx.state === 'suspended') Audio.ctx.resume();
         Audio.init(); this.session.mode = m;
         document.getElementById('modeZen').className = m==='zen'?'mode-opt active':'mode-opt';
@@ -1284,6 +1311,29 @@ export const App = {
 
         this.session.done = true; this.session.roundLocked = true; 
         this.processWin(okC, okI); window.UI.reveal(okC, okI);
+        
+        // Hook : Vérifier si c'est la première réponse correcte ou erreur
+        if (okC && okI) {
+            // Première réponse correcte
+            if (!localStorage.getItem('tuto_module_first_correct_seen')) {
+                setTimeout(() => {
+                    const moduleId = window.UI.checkTutorialTriggers({ type: 'firstCorrect' });
+                    if (moduleId) {
+                        window.UI.startTutorialModule(moduleId);
+                    }
+                }, 1000);
+            }
+        } else {
+            // Première erreur
+            if (!localStorage.getItem('tuto_module_first_error_seen')) {
+                setTimeout(() => {
+                    const moduleId = window.UI.checkTutorialTriggers({ type: 'firstError' });
+                    if (moduleId) {
+                        window.UI.startTutorialModule(moduleId);
+                    }
+                }, 1000);
+            }
+        }
     },
     
     validateQuiz() {
@@ -1415,9 +1465,21 @@ export const App = {
 
     checkBadges() {
         let unlockedSomething = false;
+        const hadBadges = this.data.badges.length > 0;
         BADGES.forEach(b => {
             if(!this.data.badges.includes(b.id)) { if(b.check(this.data, this.session)) { this.data.badges.push(b.id); window.UI.showBadge(b); unlockedSomething = true; this.saveData(); } }
         });
+        
+        // Hook : Vérifier si c'est le premier badge débloqué
+        if (unlockedSomething && !hadBadges) {
+            setTimeout(() => {
+                const moduleId = window.UI.checkTutorialTriggers({ type: 'firstBadge' });
+                if (moduleId) {
+                    window.UI.startTutorialModule(moduleId);
+                }
+            }, 2000); // Délai pour laisser l'animation du badge se terminer
+        }
+        
         return unlockedSomething;
     },
 
@@ -1446,6 +1508,14 @@ export const App = {
         await window.UI.populateGameOver(this.session, this.session.mode);
 
         window.UI.openModal('modalGameOver', true);
+        
+        // Hook : Vérifier si un tutoriel de fin de partie doit s'afficher
+        setTimeout(() => {
+            const moduleId = window.UI.checkTutorialTriggers({ type: 'gameOver' });
+            if (moduleId) {
+                window.UI.startTutorialModule(moduleId);
+            }
+        }, 500);
     },
     
     replaySameMode() { window.UI.closeModals(); this.setMode(this.session.mode); },

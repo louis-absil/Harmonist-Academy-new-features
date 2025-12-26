@@ -96,6 +96,14 @@ export const ChallengeManager = {
         document.getElementById('highScoreVal').innerText = "EXAM";
         document.getElementById('streakVal').innerText = "-"; 
         
+        // Hook : Vérifier si c'est le premier défi
+        setTimeout(() => {
+            const moduleId = window.UI.checkTutorialTriggers({ type: 'challengeStart' });
+            if (moduleId) {
+                window.UI.startTutorialModule(moduleId);
+            }
+        }, 500);
+        
         // --- FIX UI : INITIALISATION BARRE ---
     if (window.UI.initChallengeProgress) {
         // On initialise juste la barre (Case 0 blanche par défaut)
