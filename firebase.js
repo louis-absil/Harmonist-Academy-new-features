@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInAnonymously, signOut, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, deleteDoc, getDoc, collection, addDoc, query, orderBy, limit, getDocs, where, serverTimestamp, runTransaction, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, deleteDoc, getDoc, collection, addDoc, query, orderBy, limit, getDocs, where, serverTimestamp, runTransaction, enableIndexedDbPersistence, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMA9hH3hjlkjp-a4lpb3Dg9IusUB-AiMQ",
@@ -72,6 +72,8 @@ export const Cloud = {
     },
 
     getCurrentUID() { return userUid; },
+    
+    getDB() { return db; },
     get auth() { return auth; },
 
     // --- 2. SAUVEGARDE ---
@@ -440,4 +442,138 @@ export const Cloud = {
     },
 
     getDailyChallengeID() { return `DAILY-${new Date().toISOString().split('T')[0]}`; },
+
+    // --- LIVE SESSIONS (Harmonist Live) ---
+    
+    async createLiveSession(code, config) {
+        // #region agent log
+        const currentUserUid = auth?.currentUser?.uid;
+        console.log('🔍 createLiveSession called:', {
+            hasDb: !!db,
+            hasUserUid: !!userUid,
+            hasCurrentUser: !!auth?.currentUser,
+            currentUserUid: currentUserUid,
+            code: code
+        });
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase.js:448',message:'createLiveSession called',data:{hasDb:!!db,hasUserUid:!!userUid,hasCurrentUser:!!auth?.currentUser,currentUserUid:currentUserUid,code:code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        if (!db) {
+            console.error("❌ Firestore not initialized");
+            return null;
+        }
+        const uid = userUid || currentUserUid;
+        if (!uid) {
+            console.error("❌ No user UID available");
+            return null;
+        }
+        try {
+            const sessionData = {
+                code: code.toUpperCase(),
+                createdBy: uid,
+                status: 'waiting',
+                createdAt: serverTimestamp(),
+                config: config || {},
+                settings: {
+                    timer: null,
+                    showPseudo: true,
+                    maxParticipants: 50,
+                    silentMode: false,
+                    pianoLive: false
+                },
+                currentQuestion: null,
+                remoteControl: null,
+                remoteConnected: false,
+                remoteDeviceId: null
+            };
+            
+            // Utiliser le code comme ID du document pour faciliter la recherche
+            const sessionRef = doc(db, 'live_sessions', code.toUpperCase());
+            // #region agent log
+            console.log('🔍 Attempting to create session:', {
+                sessionRef: `live_sessions/${code.toUpperCase()}`,
+                createdBy: uid,
+                sessionData: sessionData
+            });
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase.js:472',message:'Attempting setDoc',data:{sessionRef:`live_sessions/${code.toUpperCase()}`,createdBy:uid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+            await setDoc(sessionRef, sessionData);
+            console.log("🎓 Live session created:", code);
+            return code.toUpperCase();
+        } catch (e) {
+            console.error("Live session creation error:", e);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase.js:476',message:'createLiveSession error',data:{error:e.message,code:e.code,hasDb:!!db,hasUserUid:!!uid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
+            return null;
+        }
+    },
+
+    async getLiveSession(sessionId) {
+        // #region agent log
+        const currentUserUid = auth?.currentUser?.uid;
+        console.log('🔍 getLiveSession called:', {
+            hasDb: !!db,
+            hasUserUid: !!userUid,
+            hasCurrentUser: !!auth?.currentUser,
+            currentUserUid: currentUserUid,
+            sessionId: sessionId
+        });
+        fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase.js:481',message:'getLiveSession called',data:{hasDb:!!db,hasUserUid:!!userUid,hasCurrentUser:!!auth?.currentUser,currentUserUid:currentUserUid,sessionId:sessionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        if (!db) return null;
+        try {
+            const sessionRef = doc(db, 'live_sessions', sessionId.toUpperCase());
+            const sessionSnap = await getDoc(sessionRef);
+            if (sessionSnap.exists()) {
+                return { id: sessionSnap.id, ...sessionSnap.data() };
+            }
+            return null;
+        } catch (e) {
+            console.error("Get live session error:", e);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'firebase.js:491',message:'getLiveSession error',data:{error:e.message,code:e.code,hasDb:!!db},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
+            return null;
+        }
+    },
+
+    async updateLiveSession(sessionId, data) {
+        if (!db) return false;
+        try {
+            const sessionRef = doc(db, 'live_sessions', sessionId.toUpperCase());
+            await updateDoc(sessionRef, data);
+            return true;
+        } catch (e) {
+            console.error("Update live session error:", e);
+            return false;
+        }
+    },
+
+    async submitLiveAnswer(sessionId, studentUid, answer) {
+        if (!db || !userUid) return false;
+        try {
+            // Calculer si la réponse est correcte
+            const session = await this.getLiveSession(sessionId);
+            if (!session || !session.currentQuestion) return false;
+            
+            const currentQ = session.currentQuestion;
+            const isCorrect = answer.type === currentQ.chord.type && 
+                             answer.inv === currentQ.chord.inv;
+            
+            const answerData = {
+                uid: userUid,
+                answer: answer,
+                timestamp: serverTimestamp(),
+                isCorrect: isCorrect,
+                questionStep: currentQ.step
+            };
+            
+            const answerRef = doc(db, `live_sessions/${sessionId.toUpperCase()}/answers`, studentUid);
+            await setDoc(answerRef, answerData);
+            return true;
+        } catch (e) {
+            console.error("Submit live answer error:", e);
+            return false;
+        }
+    },
 };

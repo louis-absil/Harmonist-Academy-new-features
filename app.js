@@ -55,7 +55,14 @@ export const App = {
             bassMidi: 48, // C3
             octaveShift: 0,
             sequence: [] // [ { type:'maj7', inv:0, bass:48 }, ... ]
-        }
+        },
+        // ÉTAT LIVE STUDENT (Phase 3)
+        isLiveStudent: false,
+        liveSessionId: null,
+        liveSessionCode: null,
+        liveQuestionIndex: 0,
+        liveAnswerSubmitted: false,
+        liveWaitingForReveal: false
     },
     timerRef: null, sprintRef: null, vignetteRef: null,
     
@@ -1289,6 +1296,46 @@ export const App = {
         }
         const okC = this.session.selC === c.type.id; const isDim = c.type.id === 'dim7' && this.data.currentSet !== 'jazz'; const okI = isDim ? true : (this.session.selI === c.inv);
         
+        // HOOK POUR LE MODE LIVE ÉLÈVE (Phase 3)
+        if(this.session.isLiveStudent) {
+            if(this.session.liveAnswerSubmitted) {
+                console.warn("⚠️ Réponse déjà soumise");
+                return;
+            }
+            
+            this.session.done = true;
+            this.session.roundLocked = true;
+            this.session.liveAnswerSubmitted = true;
+            
+            const win = okC && okI;
+            const answer = {
+                type: this.session.selC,
+                inv: this.session.selI,
+                correct: win
+            };
+            
+            // Soumettre la réponse à Firestore
+            if (window.LiveManager && this.session.liveSessionId) {
+                const userUid = window.Cloud?.getCurrentUser()?.uid || 'anonymous';
+                window.LiveManager.submitAnswer(this.session.liveSessionId, userUid, answer).then(() => {
+                    console.log("✅ Réponse soumise");
+                    // Désactiver le bouton Valider
+                    const valBtn = document.getElementById('valBtn');
+                    if (valBtn) {
+                        valBtn.disabled = true;
+                        valBtn.innerText = "En attente...";
+                    }
+                    window.UI.msg("Réponse soumise", "En attente de la révélation");
+                }).catch(err => {
+                    console.error("❌ Erreur soumission réponse:", err);
+                });
+            }
+            
+            // Afficher visuellement la réponse (mais pas la révéler)
+            window.UI.reveal(okC, okI);
+            return;
+        }
+        
         // HOOK POUR LE MODE DÉFI (V5.0)
         if(this.session.isChallenge) {
             this.session.done = true; this.session.roundLocked = true;
@@ -1516,11 +1563,16 @@ export const App = {
         const s = this.session; const d = this.data; const rand = (arr) => arr[Math.floor(this.rng() * arr.length)];
         const sTot = s.globalTot; const sOk = s.globalOk; const sAcc = sTot > 0 ? (sOk / sTot) : 0;
         let gOk = 0, gTot = 0; for(let k in d.stats.c) { gOk += d.stats.c[k].ok; gTot += d.stats.c[k].tot; } const gAcc = gTot > 0 ? (gOk / gTot) : 0;
-        if(sTot < 5 && gTot < 20) { return { t: "Débutant", m: rand(COACH_DB.start) }; }
-        if(gAcc > 0.70 && sTot > 10 && sAcc < 0.50) { return { t: "Santé ☕", m: rand(COACH_DB.critical) }; }
+        
+        // --- PRIORITÉ 1: DÉBUTANT (toujours en premier) ---
+        if(sTot < 5 && gTot < 20) { 
+            return { t: "Débutant", m: rand(COACH_DB.start) }; 
+        }
+        
+        // --- PRIORITÉ 2: CONSEILS CIBLÉS (avant les autres génériques) ---
         // --- NOUVELLE LOGIQUE COACH (ACCORDS + RENVERSEMENTS) ---
         let candidates = [];
-        const THRESHOLD = 0.45; // Seuil de faiblesse (< 45% de réussite)
+        const THRESHOLD = 0.60; // Seuil de faiblesse (< 60% de réussite) - Augmenté pour détecter plus de faiblesses
         const MIN_PLAYED = 5;   // Minimum d'essais pour être jugé
 
         // 1. Analyse des Accords
@@ -1528,8 +1580,13 @@ export const App = {
             for(let cid in d.stats.c) {
                 const st = d.stats.c[cid];
                 // On vérifie le score ET si on a une phrase dans la DB pour cet accord
-                if(st && st.tot >= MIN_PLAYED && (st.ok / st.tot) < THRESHOLD) {
-                    if(COACH_DB.weakness[cid]) { candidates.push(cid); }
+                if(st && st.tot >= MIN_PLAYED) {
+                    const acc = st.tot > 0 ? (st.ok / st.tot) : 0;
+                    if(acc < THRESHOLD) {
+                        if(COACH_DB.weakness[cid]) { 
+                            candidates.push(cid); 
+                        }
+                    }
                 }
             }
         }
@@ -1545,8 +1602,13 @@ export const App = {
                     const st = invStats[iid];
                     const dbKey = prefix + iid; // ex: "inv_0" ou "voc_2"
                     
-                    if(st && st.tot >= MIN_PLAYED && (st.ok / st.tot) < THRESHOLD) {
-                        if(COACH_DB.weakness[dbKey]) { candidates.push(dbKey); }
+                    if(st && st.tot >= MIN_PLAYED) {
+                        const acc = st.tot > 0 ? (st.ok / st.tot) : 0;
+                        if(acc < THRESHOLD) {
+                            if(COACH_DB.weakness[dbKey]) { 
+                                candidates.push(dbKey); 
+                            }
+                        }
                     }
                 }
             }
@@ -1588,11 +1650,29 @@ export const App = {
             return { t: tip.t, m: tip.m, target: prettyName };
         }
         // -------------------------------------------------------
-        if(s.fastStreak > 3 && sAcc < 0.60) { return { t: "Vitesse ⚠️", m: rand(COACH_DB.speed_warn) }; }
-        if(gAcc < 0.60 && s.streak >= 8) { return { t: "Déclic 💡", m: rand(COACH_DB.breakthrough) }; }
-        if(sTot > 40 && sAcc < 0.50) { return { t: "Persévérance 💪", m: rand(COACH_DB.effort) }; }
-        if(sTot > 5 && (s.replayCount / sTot) > 2.5 && sAcc > 0.80) { return { t: "Confiance 🦁", m: rand(COACH_DB.patience) }; }
-        if(s.streak >= 12) { return { t: "En Feu 🔥", m: rand(COACH_DB.streak) }; }
+        
+        // --- PRIORITÉ 3: CONDITIONS GÉNÉRIQUES (seulement si pas de conseils ciblés) ---
+        
+        // Fatigue (déplacé après les conseils ciblés)
+        if(gAcc > 0.70 && sTot > 10 && sAcc < 0.50) { 
+            return { t: "Santé ☕", m: rand(COACH_DB.critical) }; 
+        }
+        
+        if(s.fastStreak > 3 && sAcc < 0.60) { 
+            return { t: "Vitesse ⚠️", m: rand(COACH_DB.speed_warn) }; 
+        }
+        if(gAcc < 0.60 && s.streak >= 8) { 
+            return { t: "Déclic 💡", m: rand(COACH_DB.breakthrough) }; 
+        }
+        if(sTot > 40 && sAcc < 0.50) { 
+            return { t: "Persévérance 💪", m: rand(COACH_DB.effort) }; 
+        }
+        if(sTot > 5 && (s.replayCount / sTot) > 2.5 && sAcc > 0.80) { 
+            return { t: "Confiance 🦁", m: rand(COACH_DB.patience) }; 
+        }
+        if(s.streak >= 12) { 
+            return { t: "En Feu 🔥", m: rand(COACH_DB.streak) }; 
+        }
         return { t: "Rappel 🧠", m: rand(COACH_DB.theory) };
     },
 

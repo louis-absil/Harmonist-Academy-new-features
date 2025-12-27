@@ -1054,7 +1054,14 @@ export const UI = {
         
         // Gestion des boutons d'onglets (Mapping manuel basé sur l'ordre HTML)
         const btns = document.querySelectorAll('.challenge-tab-btn');
-        if(btns.length >= 4) {
+        if(btns.length >= 5) {
+            if(tabName === 'arcade') { btns[0].classList.add('active'); this.updateLeaderboardView(); }
+            if(tabName === 'global') btns[1].classList.add('active');
+            if(tabName === 'join') btns[2].classList.add('active');
+            if(tabName === 'create') btns[3].classList.add('active');
+            if(tabName === 'live') btns[4].classList.add('active');
+        } else if(btns.length >= 4) {
+            // Fallback pour compatibilité
             if(tabName === 'arcade') { btns[0].classList.add('active'); this.updateLeaderboardView(); }
             if(tabName === 'global') btns[1].classList.add('active');
             if(tabName === 'join') btns[2].classList.add('active');
@@ -3267,6 +3274,585 @@ export const UI = {
         html += '</div>';
 
         container.innerHTML = html;
+    },
+
+    // --- LIVE TEACHER (Harmonist Live) ---
+    
+    showLiveHub() {
+        // #region agent log
+        // #endregion
+        this.openModal('liveTeacherModal');
+        if (window.LiveManager && window.LiveManager.switchTab) {
+            window.LiveManager.switchTab('lobby');
+        } else {
+            this.renderLiveLobby();
+        }
+    },
+    
+    renderLiveLobby() {
+        const content = document.getElementById('liveTeacherContent');
+        if (!content) return;
+        
+        const isActive = window.LiveManager && window.LiveManager.active;
+        const sessionCode = window.LiveManager ? window.LiveManager.sessionCode : null;
+        
+        if (isActive && sessionCode) {
+            // Session active : Afficher infos session
+            content.innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    <h3 style="color:var(--primary); margin-bottom:15px;">Session Active</h3>
+                    <div style="background:rgba(0,0,0,0.3); border:2px solid var(--primary); border-radius:12px; padding:20px; margin-bottom:20px;">
+                        <div style="font-size:0.9rem; color:var(--text-dim); margin-bottom:10px;">Code de Session</div>
+                        <div style="font-size:2rem; font-weight:900; color:white; letter-spacing:4px; margin-bottom:10px;">${sessionCode}</div>
+                        <button class="cmd-btn btn-listen" onclick="navigator.clipboard.writeText('${sessionCode}'); window.UI.showToast('Code copié !');" style="width:100%;">
+                            📋 Copier le Code
+                        </button>
+                    </div>
+                    <div id="liveParticipantsList" style="margin-bottom:20px;">
+                        <h4 style="margin:0 0 10px 0; color:var(--text-dim); font-size:0.9rem;">Participants (0)</h4>
+                        <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:15px; min-height:100px;">
+                            <div style="text-align:center; color:var(--text-dim);">Aucun participant</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="cmd-btn btn-action" style="flex:1;" onclick="window.LiveManager.startSession()">
+                            ▶️ Démarrer
+                        </button>
+                        <button class="cmd-btn btn-listen" style="flex:1;" onclick="window.LiveManager.stopSession()">
+                            ⏹️ Arrêter
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Pas de session : Afficher création
+            content.innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    <h3 style="color:var(--primary); margin-bottom:15px;">Créer une Session</h3>
+                    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:20px;">
+                        Créez une session Live pour que vos élèves puissent rejoindre
+                    </p>
+                    <div style="background:rgba(0,0,0,0.3); border-radius:12px; padding:20px; margin-bottom:20px;">
+                        <label style="display:block; text-align:left; margin-bottom:10px; color:var(--text-dim); font-size:0.9rem;">
+                            Type de session
+                        </label>
+                        <div style="display:flex; gap:10px; margin-bottom:15px;">
+                            <button class="mode-opt active" id="live-mode-random" onclick="window.UI.setLiveMode('random')">🎲 Aléatoire</button>
+                            <button class="mode-opt" id="live-mode-sequence" onclick="window.UI.setLiveMode('sequence')">📝 Séquence</button>
+                            <button class="mode-opt" id="live-mode-challenge" onclick="window.UI.setLiveMode('challenge')">🎯 Défi</button>
+                        </div>
+                    </div>
+                    <div id="liveRandomConfig" style="background:rgba(0,0,0,0.3); border-radius:12px; padding:20px; margin-bottom:20px;">
+                        <label style="display:block; text-align:left; margin-bottom:10px; color:var(--text-dim); font-size:0.9rem;">
+                            Nombre de questions
+                        </label>
+                        <div style="display:flex; gap:10px; margin-bottom:15px;">
+                            <button class="mode-opt active" id="live-length-10" onclick="window.UI.setLiveLength(10)">10</button>
+                            <button class="mode-opt" id="live-length-20" onclick="window.UI.setLiveLength(20)">20</button>
+                            <button class="mode-opt" id="live-length-50" onclick="window.UI.setLiveLength(50)">50</button>
+                        </div>
+                    </div>
+                    <div id="liveSequenceConfig" style="display:none; background:rgba(0,0,0,0.3); border-radius:12px; padding:20px; margin-bottom:20px;">
+                        <label style="display:block; text-align:left; margin-bottom:10px; color:var(--text-dim); font-size:0.9rem;">
+                            Créer une séquence personnalisée
+                        </label>
+                        <button class="cmd-btn btn-listen" style="width:100%; margin-bottom:10px;" onclick="window.UI.showLiveSequenceEditor()">
+                            ✏️ Éditer la Séquence
+                        </button>
+                        <div id="liveSequencePreview" style="color:var(--text-dim); font-size:0.9rem;">
+                            Aucune séquence définie
+                        </div>
+                    </div>
+                    <div id="liveChallengeConfig" style="display:none; background:rgba(0,0,0,0.3); border-radius:12px; padding:20px; margin-bottom:20px;">
+                        <label style="display:block; text-align:left; margin-bottom:10px; color:var(--text-dim); font-size:0.9rem;">
+                            Code du défi existant
+                        </label>
+                        <input type="text" id="liveChallengeCodeInput" placeholder="Ex: DEF-1234" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--primary); border-radius:8px; color:white; margin-bottom:10px;" />
+                        <button class="cmd-btn btn-listen" style="width:100%;" onclick="window.UI.loadLiveChallenge()">
+                            📥 Charger le Défi
+                        </button>
+                    </div>
+                    <button class="cmd-btn btn-action" style="width:100%; padding:20px;" onclick="window.UI.createLiveSession()">
+                        <span style="display:block; font-size:1.5rem; margin-bottom:10px;">🎓</span>
+                        <span style="display:block; font-size:1.2rem;">Créer une Session</span>
+                    </button>
+                </div>
+            `;
+        }
+    },
+    
+    setLiveLength(n) {
+        this.liveConfig = this.liveConfig || {};
+        this.liveConfig.length = n;
+        document.querySelectorAll('#liveTeacherContent .mode-opt').forEach(b => {
+            if(b.innerText == n) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+    },
+    
+    async createLiveSession() {
+        const config = this.liveConfig || { length: 20 };
+        
+        try {
+            const result = await window.LiveManager.createSession(config);
+            if (result && result.code) {
+                this.showToast(`✅ Session créée : ${result.code}`);
+                this.renderLiveLobby();
+                
+                // Démarrer l'écoute des participants
+                if (window.LiveManager.listenToParticipants) {
+                    window.LiveManager.listenToParticipants(result.sessionId, (participants) => {
+                        this.updateLiveParticipants(participants);
+                    });
+                }
+            } else {
+                this.showToast("❌ Erreur lors de la création");
+            }
+        } catch (error) {
+            console.error("Erreur création session:", error);
+            this.showToast("❌ Erreur : " + error.message);
+        }
+    },
+    
+    updateLiveParticipants(participants) {
+        const listEl = document.getElementById('liveParticipantsList');
+        if (!listEl) return;
+        
+        const count = Object.keys(participants).length;
+        const countEl = listEl.querySelector('h4');
+        if (countEl) {
+            countEl.textContent = `Participants (${count})`;
+        }
+        
+        const container = listEl.querySelector('div');
+        if (!container) return;
+        
+        if (count === 0) {
+            container.innerHTML = '<div style="text-align:center; color:var(--text-dim);">Aucun participant</div>';
+        } else {
+            container.innerHTML = Object.entries(participants).map(([uid, data]) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:8px;">
+                    <div>
+                        <div style="font-weight:700; color:white;">${data.pseudo || 'Élève anonyme'}</div>
+                        <div style="font-size:0.8rem; color:var(--text-dim);">${uid.substring(0, 8)}...</div>
+                    </div>
+                    <button class="cmd-btn" style="padding:5px 15px; font-size:0.8rem; background:var(--error);" onclick="window.LiveManager.kickParticipant('${uid}')">
+                        🚪 Kick
+                    </button>
+                </div>
+            `).join('');
+        }
+    },
+    
+    renderLiveSession() {
+        const content = document.getElementById('liveTeacherContent');
+        if (!content) return;
+        
+        const isActive = window.LiveManager && window.LiveManager.active;
+        const sessionCode = window.LiveManager ? window.LiveManager.sessionCode : null;
+        const currentQuestion = window.LiveManager ? window.LiveManager.currentQuestion : null;
+        
+        if (!isActive || !sessionCode) {
+            content.innerHTML = `
+                <div style="text-align:center; padding:40px;">
+                    <p style="color:var(--text-dim); font-size:1.1rem; margin-bottom:20px;">
+                        Aucune session active
+                    </p>
+                    <p style="color:var(--text-dim); font-size:0.9rem;">
+                        Créez une session depuis l'onglet "Lobby" pour commencer
+                    </p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Afficher l'interface de session active
+        const chordName = currentQuestion && currentQuestion.chord ? 
+            (currentQuestion.chord.name || currentQuestion.chord.id || 'Aucun accord') : 'En attente...';
+        const chordInv = currentQuestion && currentQuestion.inv ? 
+            `Renversement ${currentQuestion.inv}` : '';
+        const step = currentQuestion ? (currentQuestion.step || 0) : 0;
+        
+        content.innerHTML = `
+            <div style="padding:20px;">
+                <div style="text-align:center; margin-bottom:30px;">
+                    <h3 style="color:var(--primary); margin-bottom:10px;">Session Active</h3>
+                    <div style="font-size:0.9rem; color:var(--text-dim);">Code: ${sessionCode}</div>
+                </div>
+                
+                <div style="background:rgba(0,0,0,0.3); border:2px solid var(--primary); border-radius:12px; padding:30px; margin-bottom:20px; text-align:center;">
+                    <div style="font-size:0.9rem; color:var(--text-dim); margin-bottom:10px;">Question ${step}</div>
+                    <div style="font-size:2.5rem; font-weight:900; color:white; margin-bottom:10px;">${chordName}</div>
+                    ${chordInv ? `<div style="font-size:1.2rem; color:var(--text-dim);">${chordInv}</div>` : ''}
+                </div>
+                
+                <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+                    <button class="cmd-btn btn-action" onclick="window.LiveManager.playCurrentChord && window.LiveManager.playCurrentChord()">
+                        🎹 Jouer le Son
+                    </button>
+                    <button class="cmd-btn btn-listen" onclick="window.LiveManager.revealAnswer && window.LiveManager.revealAnswer()">
+                        👁️ Révéler la Réponse
+                    </button>
+                    <button class="cmd-btn btn-action" onclick="window.LiveManager.nextQuestion && window.LiveManager.nextQuestion()">
+                        ➡️ Question Suivante
+                    </button>
+                    <div style="display:flex; gap:10px;">
+                        <button class="cmd-btn" style="flex:1; background:var(--warning);" onclick="window.LiveManager.pauseSession && window.LiveManager.pauseSession()">
+                            ⏸️ Pause
+                        </button>
+                        <button class="cmd-btn" style="flex:1; background:var(--error);" onclick="window.LiveManager.stopSession && window.LiveManager.stopSession()">
+                            ⏹️ Arrêter
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:15px; margin-bottom:20px;">
+                    <h4 style="margin:0 0 10px 0; color:var(--text-dim); font-size:0.9rem;">Statistiques</h4>
+                    <div id="liveSessionStats" style="color:var(--text-dim); font-size:0.9rem;">
+                        En attente de données...
+                    </div>
+                </div>
+                
+                <button class="cmd-btn" style="width:100%; background:rgba(255,255,255,0.1);" onclick="window.LiveManager.showRemoteQR && window.LiveManager.showRemoteQR()">
+                    📱 Connecter Télécommande Mobile
+                </button>
+            </div>
+        `;
+    },
+    
+    renderLiveHistory() {
+        const content = document.getElementById('liveTeacherContent');
+        if (!content) return;
+        
+        content.innerHTML = `
+            <div style="padding:20px;">
+                <h3 style="color:var(--primary); margin-bottom:20px;">Historique des Sessions</h3>
+                <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:20px; text-align:center;">
+                    <p style="color:var(--text-dim); font-size:0.9rem;">
+                        L'historique des sessions passées sera disponible prochainement
+                    </p>
+                    <p style="color:var(--text-dim); font-size:0.8rem; margin-top:10px;">
+                        Cette fonctionnalité permettra de consulter les statistiques et résultats des sessions précédentes
+                    </p>
+                </div>
+            </div>
+        `;
+    },
+    // #region agent log
+    // Test function to verify UI object is complete
+    _debugCheck() {
+    },
+    // #endregion
+    
+    // --- LIVE STUDENT MODE (Phase 3) ---
+    
+    showLiveStudentJoin() {
+        this.openModal('liveStudentJoinModal');
+        const input = document.getElementById('liveStudentCodeInput');
+        if (input) {
+            input.value = '';
+            input.focus();
+            // Limiter à 4 lettres majuscules
+            input.oninput = (e) => {
+                e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+            };
+            // Permettre Enter pour valider
+            input.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    this.joinLiveSession();
+                }
+            };
+        }
+        const errorDiv = document.getElementById('liveStudentJoinError');
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+    },
+    
+    async joinLiveSession() {
+        const input = document.getElementById('liveStudentCodeInput');
+        if (!input) return;
+        
+        const code = input.value.trim().toUpperCase();
+        if (!code || code.length !== 4) {
+            this.showLiveStudentError("Veuillez entrer un code à 4 lettres");
+            return;
+        }
+        
+        try {
+            const result = await window.LiveManager.joinSession(code);
+            if (result && result.sessionId) {
+                // Basculer en mode élève
+                this.enterLiveStudentMode(result.sessionId, result.code);
+                this.closeModals();
+                this.showToast(`✅ Session rejointe : ${result.code}`);
+            } else {
+                this.showLiveStudentError("Session introuvable ou terminée");
+            }
+        } catch (error) {
+            console.error("Erreur rejoindre session:", error);
+            this.showLiveStudentError("Erreur : " + error.message);
+        }
+    },
+    
+    showLiveStudentError(message) {
+        const errorDiv = document.getElementById('liveStudentJoinError');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    },
+    
+    enterLiveStudentMode(sessionId, sessionCode) {
+        // Mettre à jour l'état de session
+        if (window.App) {
+            window.App.session.isLiveStudent = true;
+            window.App.session.liveSessionId = sessionId;
+            window.App.session.liveSessionCode = sessionCode;
+            window.App.session.liveAnswerSubmitted = false;
+            window.App.session.liveWaitingForReveal = false;
+            window.App.session.liveQuestionIndex = 0;
+        }
+        
+        // Ajouter classe CSS pour masquer header/footer
+        document.body.classList.add('live-student-mode');
+        
+        // Afficher barre progression Live
+        this.showLiveProgressBar();
+        
+        // Écouter les changements de question
+        this.setupLiveStudentListeners(sessionId);
+        
+        // Basculer en mode zen (si pas déjà)
+        if (window.App && window.App.session.mode !== 'zen') {
+            window.App.setMode('zen');
+        }
+        
+        console.log("✅ Mode élève activé:", sessionCode);
+    },
+    
+    exitLiveStudentMode() {
+        // Nettoyer l'état
+        if (window.App) {
+            window.App.session.isLiveStudent = false;
+            window.App.session.liveSessionId = null;
+            window.App.session.liveSessionCode = null;
+            window.App.session.liveAnswerSubmitted = false;
+            window.App.session.liveWaitingForReveal = false;
+        }
+        
+        // Retirer classe CSS
+        document.body.classList.remove('live-student-mode');
+        
+        // Masquer barre progression
+        this.hideLiveProgressBar();
+        
+        // Nettoyer listeners
+        if (window.LiveManager && window.LiveManager.cleanup) {
+            window.LiveManager.cleanup();
+        }
+        
+        // Retour au mode zen
+        if (window.App) {
+            window.App.setMode('zen');
+        }
+        
+        console.log("✅ Mode élève désactivé");
+    },
+    
+    showLiveProgressBar() {
+        // Créer ou afficher la barre progression Live
+        let container = document.getElementById('liveProgressContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'liveProgressContainer';
+            container.className = 'live-progress-container';
+            document.body.insertBefore(container, document.getElementById('appContainer'));
+        }
+        container.style.display = 'block';
+        
+        // Initialiser les segments (20 par défaut)
+        this.initLiveProgressSegments(20);
+    },
+    
+    hideLiveProgressBar() {
+        const container = document.getElementById('liveProgressContainer');
+        if (container) {
+            container.style.display = 'none';
+        }
+    },
+    
+    initLiveProgressSegments(count) {
+        const container = document.getElementById('liveProgressContainer');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="live-progress-segments">
+                ${Array.from({ length: count }, (_, i) => 
+                    `<div class="live-progress-segment" id="live-segment-${i}" data-index="${i}"></div>`
+                ).join('')}
+            </div>
+        `;
+    },
+    
+    updateLiveProgressSegment(index, state) {
+        const segment = document.getElementById(`live-segment-${index}`);
+        if (!segment) return;
+        
+        // Retirer toutes les classes d'état
+        segment.classList.remove('pending', 'current', 'correct', 'incorrect');
+        
+        // Ajouter la classe d'état appropriée
+        segment.classList.add(state);
+    },
+    
+    setupLiveStudentListeners(sessionId) {
+        if (!sessionId || !window.LiveManager) return;
+        
+        // Écouter les changements de session (pour currentQuestion)
+        window.LiveManager.listenToSession(sessionId, (sessionData) => {
+            if (sessionData && sessionData.currentQuestion) {
+                this.onLiveQuestionChanged(sessionData.currentQuestion, sessionData);
+            }
+        });
+    },
+    
+    onLiveQuestionChanged(question, sessionData) {
+        // Réinitialiser l'état de réponse
+        if (window.App) {
+            window.App.session.liveAnswerSubmitted = false;
+            window.App.session.liveWaitingForReveal = false;
+            window.App.session.liveQuestionIndex = question.step || 0;
+        }
+        
+        // Mettre à jour la barre progression
+        const step = question.step || 0;
+        const total = sessionData.config?.length || 20;
+        
+        // Marquer le segment actuel
+        for (let i = 0; i < total; i++) {
+            if (i < step - 1) {
+                // Questions passées (état sera mis à jour après révélation)
+                // Pour l'instant, on laisse en pending
+            } else if (i === step - 1) {
+                this.updateLiveProgressSegment(i, 'current');
+            } else {
+                this.updateLiveProgressSegment(i, 'pending');
+            }
+        }
+        
+        // Si la question est révélée, afficher la réponse
+        if (question.revealed) {
+            this.onLiveAnswerRevealed(question);
+        } else {
+            // Nouvelle question : générer et afficher l'accord
+            this.generateLiveQuestion(question);
+        }
+    },
+    
+    generateLiveQuestion(question) {
+        if (!question || !question.chord || !window.App || !window.DB) {
+            console.warn("⚠️ Question invalide pour génération");
+            return;
+        }
+        
+        const chordData = question.chord;
+        const App = window.App;
+        const DB = window.DB;
+        
+        // Trouver l'objet chord complet
+        const chordsList = DB.chords || [];
+        const chordObj = chordsList.find(c => c.id === chordData.type || c.id === chordData.id);
+        
+        if (!chordObj) {
+            console.error("❌ Chord non trouvé:", chordData);
+            return;
+        }
+        
+        // Générer les notes de l'accord
+        const inv = chordData.inv !== undefined ? chordData.inv : 0;
+        let notes;
+        
+        if (App.getNotes && typeof App.getNotes === 'function') {
+            const root = chordData.root !== undefined ? chordData.root : (chordData.open ? 36 : 48);
+            const open = chordData.open !== undefined ? chordData.open : false;
+            notes = App.getNotes(chordObj, inv, root, open);
+        } else if (App.getNotesFromBass && typeof App.getNotesFromBass === 'function' && chordData.bass) {
+            notes = App.getNotesFromBass(chordObj, inv, chordData.bass);
+        } else {
+            notes = chordObj.notes || [];
+        }
+        
+        if (notes && notes.length > 0) {
+            // Mettre à jour la session avec l'accord
+            App.session.chord = {
+                type: chordObj,
+                inv: inv,
+                notes: notes,
+                root: chordData.root || 48,
+                open: chordData.open || false
+            };
+            App.session.done = false;
+            App.session.roundLocked = false;
+            
+            // Jouer l'accord automatiquement
+            if (window.Audio && window.Audio.chord) {
+                window.Audio.chord(notes);
+                App.session.audioStartTime = Date.now();
+            }
+            
+            // Réinitialiser l'interface
+            this.resetLiveStudentUI();
+            
+            // Afficher message
+            if (window.UI && window.UI.msg) {
+                window.UI.msg("Écoute...", "");
+            }
+            
+            // Désactiver bouton Valider jusqu'à sélection
+            const valBtn = document.getElementById('valBtn');
+            if (valBtn) {
+                valBtn.disabled = true;
+                valBtn.innerText = "Valider";
+                valBtn.className = "cmd-btn btn-action";
+            }
+            
+            // Réinitialiser les sélections visuelles
+            if (window.UI && window.UI.renderSel) {
+                window.UI.renderSel();
+            }
+        } else {
+            console.error("❌ Impossible de générer les notes");
+        }
+    },
+    
+    resetLiveStudentUI() {
+        // Réinitialiser les sélections
+        if (window.App) {
+            window.App.session.selC = null;
+            window.App.session.done = false;
+        }
+        
+        // Réinitialiser les boutons
+        const valBtn = document.getElementById('valBtn');
+        if (valBtn) {
+            valBtn.disabled = true;
+            valBtn.innerText = "Valider";
+            valBtn.className = "cmd-btn btn-action";
+        }
+        
+        // Réinitialiser le message
+        if (window.UI && window.UI.msg) {
+            window.UI.msg("Écoute...", "");
+        }
+    },
+    
+    onLiveAnswerRevealed(question) {
+        // Afficher la réponse correcte
+        // TODO: Comparer avec la réponse de l'élève et mettre à jour la barre progression
+        if (window.UI && window.UI.msg) {
+            window.UI.msg("Réponse révélée", "");
+        }
     },
 
 };

@@ -883,7 +883,7 @@ input:checked + .slider { background: var(--primary); } input:checked + .slider:
 .nav-btn-round:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
 .nav-btn-round:disabled { opacity: 0.3; cursor: default; }
 
-.lb-sub-nav { display: flex; justify-content: center; gap: 20px; margin-bottom: 15px; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px; }
+.lb-sub-nav { display: flex; justify-content: center; gap: 20px; margin-bottom: 15px; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px; flex-wrap: wrap; }
 .lb-period-btn { background: transparent; border: none; color: var(--text-dim); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; cursor: pointer; padding: 5px 10px; position: relative; transition: color 0.2s; }
 .lb-period-btn:hover { color: white; }
 .lb-period-btn.active { color: var(--gold); }
@@ -1360,8 +1360,10 @@ input:checked + .slider { background: var(--primary); } input:checked + .slider:
         margin-bottom: 25px; 
         border-bottom: none; /* Plus joli sans la ligne en mode grille */
     }
+    
 
-    .lb-period-btn {
+    .lb-period-btn,
+    .challenge-tab-btn {
         /* FORCE 2 BOUTONS PAR LIGNE (45% chq + gap) */
         flex: 1 0 45%; 
         
@@ -1379,12 +1381,14 @@ input:checked + .slider { background: var(--primary); } input:checked + .slider:
     }
     
     /* Style actif pour les boutons mobiles (encadré doré) */
-    .lb-period-btn.active {
+    .lb-period-btn.active,
+    .challenge-tab-btn.active {
         background: rgba(251, 191, 36, 0.1);
         border-color: var(--gold);
     }
     /* On retire la barre de soulignement desktop qui fait bizarre sur 2 lignes */
-    .lb-period-btn.active::after {
+    .lb-period-btn.active::after,
+    .challenge-tab-btn.active::after {
         display: none; 
     }
 
@@ -1397,6 +1401,20 @@ input:checked + .slider { background: var(--primary); } input:checked + .slider:
     }
 
     /* DANS styles.css (Tout en bas) */
+}
+
+/* --- APPLIQUER FLEX-WRAP EN DESKTOP AUSSI (pour éviter scroll horizontal) --- */
+@media (min-width: 601px) {
+    .lb-sub-nav {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .lb-period-btn,
+    .challenge-tab-btn {
+        flex: 0 1 auto;
+        min-width: auto;
+    }
 }
 
 /* --- BARRE DE PROGRESSION (GLOBAL) --- */
@@ -1500,6 +1518,75 @@ input:checked + .slider { background: var(--primary); } input:checked + .slider:
 
 .modal-help-icon:active {
     transform: scale(0.95);
+}
+
+/* --- MODE ÉLÈVE LIVE (Phase 3) --- */
+
+/* Masquer header/footer en mode élève */
+body.live-student-mode header,
+body.live-student-mode .tools-bar .mode-selector,
+body.live-student-mode footer {
+    display: none !important;
+}
+
+/* Barre progression Live */
+.live-progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 10px 20px;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.live-progress-segments {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.live-progress-segment {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    min-width: 20px;
+    max-width: 50px;
+}
+
+.live-progress-segment.pending {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.live-progress-segment.current {
+    background: var(--primary);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    animation: pulse-segment 1.5s ease-in-out infinite;
+}
+
+.live-progress-segment.correct {
+    background: var(--success);
+}
+
+.live-progress-segment.incorrect {
+    background: var(--error);
+}
+
+@keyframes pulse-segment {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Ajuster le padding du body en mode élève */
+body.live-student-mode .app-container {
+    padding-top: 50px; /* Espace pour la barre progression */
 }
 
 }

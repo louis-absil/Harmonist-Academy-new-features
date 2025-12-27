@@ -1,4 +1,4 @@
-const CACHE_NAME = 'harmonist-v8.0-offline'; // Nouvelle version pour forcer la mise à jour
+const CACHE_NAME = 'harmonist-v8.2-offline'; // Nouvelle version pour forcer la mise à jour (ajout Live)
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   './audio.js',
   './data.js',
   './challenges.js',
+  './live.js',
   './firebase.js',
   './manifest.json',
   './icon-192.png',
@@ -64,15 +65,31 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// 2. Interception des requêtes (Mode "Cache First")
+// 2. Interception des requêtes (Mode "Network First" pour les fichiers JS en développement)
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      // Si c'est dans le cache, on le rend direct (Ultra rapide)
-      // Sinon, on va le chercher sur internet
-      return response || fetch(e.request);
-    })
-  );
+  // Pour les fichiers JS, toujours aller chercher la version réseau d'abord
+  if (e.request.url.includes('.js') && (e.request.url.includes('ui.js') || e.request.url.includes('main.js') || e.request.url.includes('live.js'))) {
+    e.respondWith(
+      fetch(e.request).then((response) => {
+        // Mettre à jour le cache avec la nouvelle version
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(e.request, responseClone);
+        });
+        return response;
+      }).catch(() => {
+        // Si réseau échoue, utiliser le cache
+        return caches.match(e.request);
+      })
+    );
+  } else {
+    // Pour les autres fichiers, mode "Cache First"
+    e.respondWith(
+      caches.match(e.request).then((response) => {
+        return response || fetch(e.request);
+      })
+    );
+  }
 });
 
 // 3. Activation (Nettoyage des vieux caches si tu changes de version)

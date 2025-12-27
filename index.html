@@ -364,6 +364,7 @@
             <button class="lb-period-btn challenge-tab-btn" onclick="window.UI.switchChallengeTab('global')">Défi du Jour</button>
             <button class="lb-period-btn challenge-tab-btn" onclick="window.UI.switchChallengeTab('join')">Rejoindre</button>
             <button class="lb-period-btn challenge-tab-btn" onclick="window.UI.switchChallengeTab('create')">Créer</button>
+            <button class="lb-period-btn challenge-tab-btn" onclick="window.UI.switchChallengeTab('live')">🎓 Classe</button>
         </div>
 
         <!-- TAB ARCADE (ANCIEN LEADERBOARD INTEGRÉ) -->
@@ -420,6 +421,17 @@
                     ">JOUER</button>
                     <button class="cmd-btn btn-listen" style="flex:1;" onclick="window.UI.viewChallengeLeaderboard()">VOIR SCORES</button>
                 </div>
+                
+                <div style="margin:30px 0; padding:20px 0; border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1);">
+                    <h3 style="color:var(--primary); margin-bottom:15px;">🎓 Rejoindre une Classe</h3>
+                    <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:20px;">
+                        Entrez le code de session partagé par votre professeur
+                    </p>
+                    <button class="cmd-btn btn-listen" style="width:100%; padding:20px;" onclick="window.UI.showLiveStudentJoin()">
+                        <span style="display:block; font-size:1.5rem; margin-bottom:10px;">🎓</span>
+                        <span style="display:block; font-size:1.2rem;">Rejoindre une Classe</span>
+                    </button>
+                </div>
             </div>
             <div id="join-lb-results"></div>
             <div style="border-top:1px solid var(--panel-border); padding-top:15px;">
@@ -465,6 +477,93 @@
 
                 <button class="cmd-btn btn-action" style="width:100%; margin-top:30px;" onclick="window.UI.createChallengeAction()">Générer le Code</button>
             </div>
+        </div>
+
+        <!-- TAB LIVE (HARMONIST LIVE) -->
+        <div id="c-tab-live" class="challenge-tab-content" style="display:none;">
+            <div style="text-align:center; padding:20px;">
+                <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:20px;">
+                    Mode classe en temps réel pour professeurs et élèves
+                </p>
+                <button class="cmd-btn btn-action" style="width:100%; padding:20px;" onclick="
+                    const allKeys = window.UI ? Object.keys(window.UI) : [];
+                    const lastKeys = allKeys.slice(-15);
+                    console.log('🔍 Button clicked - UI check:', {
+                        windowUI: !!window.UI,
+                        windowUIShowLiveHub: !!(window.UI && window.UI.showLiveHub),
+                        windowUIKeys: lastKeys,
+                        windowUILength: allKeys.length,
+                        hasRenderLiveLobby: !!(window.UI && window.UI.renderLiveLobby),
+                        hasCreateLiveSession: !!(window.UI && window.UI.createLiveSession),
+                        ALL_KEYS: allKeys  // Afficher TOUTES les clés pour voir où ça s'arrête
+                    });
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/4137fff8-1e02-4a44-a17e-e122d054e9a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:477',message:'Button clicked',data:{windowUIExists:!!window.UI,windowUIShowLiveHubExists:!!(window.UI&&window.UI.showLiveHub),windowUIType:typeof window.UI,windowUIKeys:lastKeys,windowUILength:allKeys.length,hasRenderLiveLobby:!!(window.UI&&window.UI.renderLiveLobby),hasCreateLiveSession:!!(window.UI&&window.UI.createLiveSession)},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
+                    // #endregion
+                    if(window.UI && window.UI.showLiveHub) {
+                        window.UI.showLiveHub();
+                    } else {
+                        console.error('❌ UI.showLiveHub not found', {
+                            UI: window.UI, 
+                            showLiveHub: window.UI?.showLiveHub,
+                            allKeys: allKeys,
+                            lastKeys: lastKeys,
+                            hasRenderLiveLobby: !!(window.UI && window.UI.renderLiveLobby),
+                            hasCreateLiveSession: !!(window.UI && window.UI.createLiveSession)
+                        });
+                        alert('Erreur: showLiveHub non disponible. Vérifiez la console pour les détails.');
+                    }
+                ">
+                    <span style="display:block; font-size:1.5rem; margin-bottom:10px;">🎓</span>
+                    <span style="display:block; font-size:1.2rem;">Ouvrir Harmonist Live</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODALE LIVE TEACHER -->
+<div class="modal-overlay" id="liveTeacherModal">
+    <div class="modal" style="height:90vh; max-width:900px; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="margin:0; color:var(--primary); display:flex; align-items:center; gap:10px;">🎓 Harmonist Live</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <span class="modal-help-icon" onclick="window.UI.startTutorialModule('live')" title="Aide">?</span>
+                <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+            </div>
+        </div>
+        
+        <!-- Navigation par onglets -->
+        <div class="lb-sub-nav" style="margin-bottom:15px;">
+            <button class="lb-period-btn active live-tab-btn" onclick="window.LiveManager.switchTab('lobby')">Lobby</button>
+            <button class="lb-period-btn live-tab-btn" onclick="window.LiveManager.switchTab('session')">Session Active</button>
+            <button class="lb-period-btn live-tab-btn" onclick="window.LiveManager.switchTab('history')">Historique</button>
+        </div>
+        
+        <!-- Contenu dynamique selon l'onglet -->
+        <div id="liveTeacherContent" style="flex:1; overflow-y:auto;">
+            <!-- Contenu injecté par JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- LIVE STUDENT JOIN MODAL -->
+<div class="modal-overlay" id="liveStudentJoinModal">
+    <div class="modal" style="max-width:400px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0; color:var(--primary);">🎓 Rejoindre une Classe</h3>
+            <span style="cursor:pointer; font-size:1.5rem;" onclick="window.UI.closeModals()">✕</span>
+        </div>
+        <div style="text-align:center; padding:20px;">
+            <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:20px;">
+                Entrez le code de session à 4 lettres partagé par votre professeur
+            </p>
+            <input type="text" id="liveStudentCodeInput" placeholder="Ex: ABCD" style="width:100%; padding:20px; background:rgba(0,0,0,0.5); border:2px solid var(--primary); border-radius:12px; color:white; font-size:2rem; text-align:center; letter-spacing:8px; text-transform:uppercase; margin-bottom:20px;" maxlength="4" autocomplete="off" />
+            <button class="cmd-btn btn-action" style="width:100%; padding:20px;" onclick="window.UI.joinLiveSession()">
+                <span style="display:block; font-size:1.5rem; margin-bottom:10px;">✅</span>
+                <span style="display:block; font-size:1.2rem;">Rejoindre</span>
+            </button>
+            <div id="liveStudentJoinError" style="display:none; margin-top:15px; padding:10px; background:rgba(239,68,68,0.2); border:1px solid var(--error); border-radius:8px; color:var(--error); font-size:0.9rem;"></div>
         </div>
     </div>
 </div>
@@ -524,7 +623,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
+                navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
                     .then(reg => console.log('Service Worker enregistré', reg))
                     .catch(err => console.log('Erreur SW:', err));
             });

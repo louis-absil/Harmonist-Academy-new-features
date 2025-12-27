@@ -4,6 +4,7 @@ import { UI } from './ui.js';
 import { Audio, Piano } from './audio.js';
 import { PHYSICAL_MAP, DB } from './data.js';
 import { ChallengeManager } from './challenges.js';
+import { LiveManager } from './live.js';
 
 // Global assignments for HTML event listeners (onclick="window.App...")
 window.App = App;
@@ -12,6 +13,8 @@ window.Piano = Piano;
 window.Audio = Audio;
 window.AudioEngine = Audio;
 window.ChallengeManager = ChallengeManager;
+window.LiveManager = LiveManager;
+window.DB = DB;
 
 // MAPPING CLAVIER POUR LE MODE STUDIO (Positions physiques AZERTY/QWERTY standard)
 // Rangée du bas (W X C V B N ,) et milieu (S D G H J)
